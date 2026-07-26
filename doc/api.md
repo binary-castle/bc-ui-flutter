@@ -13,12 +13,12 @@ source, so they track the code.
 
 - [Conventions](#conventions)
 - [Theme and tokens](#theme-and-tokens)
-- [Navigation](#navigation) — `BCAppHeader`, `BCSliverAppHeader`, `BCHeaderIconButton`, `BCBottomNav`, `BCTabs`, `BCTabView`
+- [Navigation](#navigation) — `BCAppHeader`, `BCSliverAppHeader`, `BCHeaderIconButton`, `BCBottomNav`, `BCNavRail`, `BCNavDrawer`, `BCToolbar`, `BCTabs`, `BCTabView`
 - [Actions](#actions) — `BCButton`, `BCLinkButton`, `BCCloseButton`, `BCFab`, `BCSpeedDial`, `BCToggleButton`, `BCToggleButtonGroup`, `BCPressable`
 - [Containers](#containers) — `BCSurface`, `BCCard`, `BCListGroup`, `BCFlipCard`, `BCScrollShadow`
-- [Data display](#data-display) — `BCText`, `BCAvatar`, `BCChip`, `BCTagGroup`, `BCSeparator`, `BCSkeleton`, `BCSpinner`, `BCRating`, `BCEmptyState`
+- [Data display](#data-display) — `BCText`, `BCAvatar`, `BCChip`, `BCTagGroup`, `BCSeparator`, `BCSkeleton`, `BCSpinner`, `BCProgress`, `BCLoadingOverlay`, `BCRating`, `BCEmptyState`
 - [Forms](#forms) — `BCInput`, `BCTextField`, `BCTextArea`, `BCPasswordInput`, `BCSearchField`, `BCInputOTP`, `BCDateField`, `BCTimeField`, `BCSelect`, `BCControlField`
-- [Selection](#selection) — `BCCheckbox`, `BCRadioGroup`, `BCSwitch`, `BCSlider`
+- [Selection](#selection) — `BCCheckbox`, `BCRadioGroup`, `BCSwitch`, `BCSlider`, `BCRangeSlider`
 - [Overlays](#overlays) — `BCDialog`, `BCPopover`, `BCMenu`, `BCToast`
 
 ---
@@ -290,6 +290,186 @@ A single destination in a `BCBottomNav`.
 | `showDot` | `bool` | `false` | Shows a small dot badge (ignored when `badgeCount` is set). |
 
 </details>
+
+### BCNavRail
+
+Vertical navigation for medium and larger windows — the counterpart to `BCBottomNav` on compact ones. Collapsed it is an 80px icon strip; `extended` widens it so labels sit beside the icons, and the width change animates.
+
+```dart
+Row(
+  children: [
+    BCNavRail(
+      selectedIndex: index,
+      onDestinationSelected: (i) => setState(() => index = i),
+      // Widen it once the window is big enough; the change animates.
+      extended: MediaQuery.sizeOf(context).width >= 1240,
+      leading: BCFab(icon: const Icon(Icons.edit), size: 48, onPressed: () {}),
+      trailing: BCHeaderIconButton(
+        icon: const Icon(Icons.settings_outlined),
+        onPressed: () {},
+      ),
+      destinations: const [
+        BCNavRailDestination(
+          icon: Icon(Icons.inbox_outlined),
+          selectedIcon: Icon(Icons.inbox),
+          label: 'Inbox',
+          badgeCount: 12,
+        ),
+        BCNavRailDestination(icon: Icon(Icons.send_outlined), label: 'Sent'),
+      ],
+    ),
+    const Expanded(child: Body()),
+  ],
+);
+```
+
+| Prop | Type | Default | Notes |
+|---|---|---|---|
+| `destinations` | `List<BCNavRailDestination>` | required |  |
+| `selectedIndex` | `int` | required |  |
+| `onDestinationSelected` | `ValueChanged<int>` | required |  |
+| `extended` | `bool` | `false` | Widens the rail and moves labels beside their icons. |
+| `labels` | `BCNavRailLabels` | `BCNavRailLabels.all` | Label visibility while collapsed; the extended rail always shows them. |
+| `leading` | `Widget?` | — | Pinned above the destinations — typically a FAB or a menu button. |
+| `trailing` | `Widget?` | — | Pinned below the destinations — settings, an avatar, a theme toggle. |
+| `groupAlignment` | `double` | `-1` | Vertical placement of the destination group: -1 top, 0 center, 1 bottom. |
+| `showIndicator` | `bool` | `true` | Paints the accent-soft pill behind the selected destination. |
+| `showSeparator` | `bool` | `true` | Hairline border on the trailing edge, separating rail from content. |
+| `backgroundColor` | `Color?` | — |  |
+| `width` | `double` | `80` |  |
+| `extendedWidth` | `double` | `232` |  |
+
+**`BCNavRailLabels`** — `all`, `selected`, `none`
+
+<details><summary><code>BCNavRailDestination</code></summary>
+
+A destination in a `BCNavRail`.
+
+| Prop | Type | Default | Notes |
+|---|---|---|---|
+| `icon` | `Widget` | required |  |
+| `label` | `String` | required |  |
+| `selectedIcon` | `Widget?` | — | Optional distinct icon for the selected state (defaults to `icon`). |
+| `badgeCount` | `int?` | — | Shows a small count badge on the icon when non-null and > 0. |
+| `showDot` | `bool` | `false` | Shows a small dot badge (ignored when `badgeCount` is set). |
+
+</details>
+
+### BCNavDrawer
+
+Wide vertical navigation, inline on large windows (`standard`) or sliding over content from `Scaffold.drawer` (`modal`). Items mix destinations with section labels and dividers; `selectedIndex` counts destinations only.
+
+```dart
+Scaffold(
+  drawer: BCNavDrawer(
+    variant: BCNavDrawerVariant.modal,
+    selectedIndex: index,
+    onDestinationSelected: (i) => setState(() => index = i),
+    header: const Text('Binary Castle'),
+    items: const [
+      BCNavDrawerSection('Mail'),
+      BCNavDrawerDestination(
+        icon: Icon(Icons.inbox_outlined),
+        selectedIcon: Icon(Icons.inbox),
+        label: 'Inbox',
+        badgeCount: 24,
+      ),
+      BCNavDrawerDivider(),
+      BCNavDrawerSection('Labels'),
+      BCNavDrawerDestination(icon: Icon(Icons.work_outline), label: 'Work'),
+    ],
+  ),
+);
+```
+
+| Prop | Type | Default | Notes |
+|---|---|---|---|
+| `items` | `List<BCNavDrawerItem>` | required |  |
+| `selectedIndex` | `int` | required | Index among the `BCNavDrawerDestination` entries only. |
+| `onDestinationSelected` | `ValueChanged<int>` | required |  |
+| `variant` | `BCNavDrawerVariant` | `BCNavDrawerVariant.standard` |  |
+| `header` | `Widget?` | — | Above the items — a product name, an account row, a search field. |
+| `footer` | `Widget?` | — | Below the items, pinned to the bottom edge. |
+| `width` | `double` | `320` |  |
+| `showIndicator` | `bool` | `true` | Paints the accent-soft pill behind the selected destination. |
+| `backgroundColor` | `Color?` | — |  |
+| `closeOnSelect` | `bool` | `true` | Pops the enclosing route (the `Scaffold` drawer) after a selection. Only applies to `BCNavDrawerVariant.modal`. |
+
+**`BCNavDrawerVariant`** — `standard`, `modal`
+
+<details><summary><code>BCNavDrawerDestination</code></summary>
+
+A selectable destination. Only these count towards `selectedIndex`.
+
+| Prop | Type | Default | Notes |
+|---|---|---|---|
+| `icon` | `Widget` | required |  |
+| `label` | `String` | required |  |
+| `selectedIcon` | `Widget?` | — | Optional distinct icon for the selected state (defaults to `icon`). |
+| `badgeCount` | `int?` | — |  |
+| `showDot` | `bool` | `false` |  |
+| `isDisabled` | `bool` | `false` |  |
+
+</details>
+
+<details><summary><code>BCNavDrawerSection</code></summary>
+
+A muted heading above a group of destinations.
+
+| Prop | Type | Default | Notes |
+|---|---|---|---|
+| `label` | `String` | — |  |
+
+</details>
+
+<details><summary><code>BCNavDrawerDivider</code></summary>
+
+A hairline rule between groups.
+
+</details>
+
+### BCToolbar
+
+A bar of actions for the current screen — the bottom-of-screen counterpart to `BCAppHeader`. Docked to the edge or floating as a rounded pill, horizontal or vertical, optionally frosted.
+
+```dart
+Scaffold(
+  bottomNavigationBar: BCToolbar(
+    primaryAction: BCFab(icon: const Icon(Icons.check), size: 48, onPressed: () {}),
+    children: [
+      BCHeaderIconButton(icon: const Icon(Icons.undo), onPressed: () {}),
+      BCHeaderIconButton(icon: const Icon(Icons.redo), onPressed: () {}),
+      BCHeaderIconButton(icon: const Icon(Icons.palette_outlined), onPressed: () {}),
+    ],
+  ),
+);
+
+// Floating pill over the content, frosted so it reads over anything.
+BCToolbar(
+  variant: BCToolbarVariant.floating,
+  blurred: true,
+  children: [...],
+);
+```
+
+| Prop | Type | Default | Notes |
+|---|---|---|---|
+| `children` | `List<Widget>` | required | The action buttons, in reading order. |
+| `variant` | `BCToolbarVariant` | `BCToolbarVariant.docked` |  |
+| `axis` | `BCToolbarAxis` | `BCToolbarAxis.horizontal` | Vertical toolbars sit along the side of the content, e.g. a canvas editor's tool strip. |
+| `primaryAction` | `Widget?` | — | Emphasized action, placed after `children` and separated from them. |
+| `alignment` | `MainAxisAlignment` | `MainAxisAlignment.spaceEvenly` | How `children` are distributed along the bar. |
+| `blurred` | `bool` | `false` | Frosts the bar so content scrolls visibly underneath it. |
+| `blurSigma` | `double` | `24` |  |
+| `backgroundOpacity` | `double` | `0.72` | Alpha applied to the background when `blurred`. |
+| `backgroundColor` | `Color?` | — | Defaults to `background` (docked) or `surface` (floating). |
+| `showSeparator` | `bool` | `true` | Hairline along the leading edge of a docked toolbar. |
+| `spacing` | `double` | `BCSpacing.xs` |  |
+| `padding` | `EdgeInsetsGeometry?` | — |  |
+
+**`BCToolbarVariant`** — `docked`, `floating`
+
+**`BCToolbarAxis`** — `horizontal`, `vertical`
 
 ### BCTabs
 
@@ -956,6 +1136,69 @@ Indeterminate loading indicator.
 
 **`BCSpinnerColor`** — `defaultColor`, `success`, `warning`, `danger`
 
+### BCProgress
+
+Determinate and indeterminate progress, linear or circular, with an optional label and percentage. Determinate changes ease into place instead of snapping.
+
+```dart
+BCProgress(value: 0.4, label: 'Uploading', showValueLabel: true);
+
+// Indeterminate until you know the total.
+const BCProgress(variant: BCProgressVariant.circular);
+
+BCProgress(
+  value: bytes / total,
+  size: BCProgressSize.lg,
+  color: BCProgressColor.success,
+  formatValue: (v) => '${(v * total / 1e6).round()} MB',
+);
+```
+
+| Prop | Type | Default | Notes |
+|---|---|---|---|
+| `value` | `double?` | — | Progress in the 0–1 range, or null for indeterminate. |
+| `variant` | `BCProgressVariant` | `BCProgressVariant.linear` |  |
+| `size` | `BCProgressSize` | `BCProgressSize.md` |  |
+| `color` | `BCProgressColor` | `BCProgressColor.accent` |  |
+| `label` | `String?` | — | Caption above a linear bar / below a circular one. |
+| `showValueLabel` | `bool` | `false` | Shows the percentage next to `label`. Ignored while indeterminate. |
+| `formatValue` | `String Function(double value)?` | — | Defaults to whole percent, e.g. `40%`. |
+| `trackColor` | `Color?` | — | Defaults to the `default` token. |
+| `valueColor` | `Color?` | — | Overrides `color`. |
+| `thickness` | `double?` | — | Bar height / ring stroke width. Defaults per `size`. |
+
+**`BCProgressVariant`** — `linear`, `circular`
+
+**`BCProgressSize`** — `sm`, `md`, `lg`
+
+**`BCProgressColor`** — `accent`, `success`, `warning`, `danger`, `foreground`
+
+### BCLoadingOverlay
+
+Covers a page or section while work is in flight: fades in a dim or blurred backdrop, blocks input underneath, and centers an indicator with an optional label.
+
+```dart
+BCLoadingOverlay(
+  isLoading: _saving,
+  label: 'Saving changes',
+  backdrop: BCLoadingBackdrop.blur,
+  child: ProfileForm(),
+);
+```
+
+| Prop | Type | Default | Notes |
+|---|---|---|---|
+| `isLoading` | `bool` | required |  |
+| `child` | `Widget` | required |  |
+| `label` | `String?` | — | Caption under the indicator. With a label the indicator sits on a surface card; without one it floats bare. |
+| `backdrop` | `BCLoadingBackdrop` | `BCLoadingBackdrop.dim` |  |
+| `indicator` | `Widget?` | — | Defaults to a large `BCSpinner`. |
+| `blurSigma` | `double` | `6` | Blur strength for `BCLoadingBackdrop.blur`. |
+| `blockInput` | `bool` | `true` | Swallows pointer events aimed at `child` while loading. |
+| `semanticLabel` | `String` | `'Loading'` |  |
+
+**`BCLoadingBackdrop`** — `dim`, `blur`
+
 ### BCRating
 
 Star rating, read-only or interactive, with optional halves.
@@ -1502,6 +1745,49 @@ BCSlider(
 | `showOutput` | `bool` | `false` | Shows the current value above the track (slider__output). |
 | `formatOutput` | `String Function(double value)?` | — |  |
 | `isDisabled` | `bool` | `false` |  |
+
+### BCRangeSlider
+
+Two-thumb slider for a start/end range — price filters, time windows, thresholds. Shares `BCSlider`'s metrics and spring.
+
+```dart
+BCRangeSlider(
+  values: range,
+  minValue: 0,
+  maxValue: 500,
+  step: 10,
+  minSeparation: 50, // thumbs cannot come closer than this
+  label: 'Price',
+  showOutput: true,
+  formatOutput: (value) => '\$${value.round()}',
+  onChanged: (value) => setState(() => range = value),
+);
+```
+
+| Prop | Type | Default | Notes |
+|---|---|---|---|
+| `values` | `BCRange` | required |  |
+| `onChanged` | `ValueChanged<BCRange>?` | — |  |
+| `onChangeEnd` | `ValueChanged<BCRange>?` | — |  |
+| `minValue` | `double` | `0` |  |
+| `maxValue` | `double` | `1` |  |
+| `step` | `double?` | — |  |
+| `minSeparation` | `double?` | — | Smallest allowed gap between the thumbs. Defaults to `step`, else 0. |
+| `label` | `String?` | — | Optional label shown above the track next to the output. |
+| `showOutput` | `bool` | `false` | Shows the current range above the track. |
+| `formatOutput` | `String Function(double value)?` | — | Formats each end of the range; the two are joined with an en dash. |
+| `isDisabled` | `bool` | `false` |  |
+
+<details><summary><code>BCRange</code></summary>
+
+A start/end pair for `BCRangeSlider`.
+
+| Prop | Type | Default | Notes |
+|---|---|---|---|
+| `start` | `double` | — |  |
+| `end` | `double` | — |  |
+
+</details>
 
 ---
 

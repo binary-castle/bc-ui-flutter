@@ -30,7 +30,7 @@
 - **Material stays available.** `BCTheme.light()` returns a `ThemeData`, so
   `Scaffold`, `Navigator`, `showDialog` and every Material widget still work.
 - **Inter is bundled.** No font setup, no missing-glyph surprises.
-- **45+ components**, all light/dark aware, all documented in the
+- **50+ components**, all light/dark aware, all documented in the
   [API reference](doc/api.md).
 
 <table>
@@ -136,12 +136,12 @@ Full props, defaults and enums for every entry: **[API reference](doc/api.md)**.
 
 | Category | Components |
 |---|---|
-| **Navigation** | [`BCAppHeader`](doc/api.md#bcappheader) · [`BCSliverAppHeader`](doc/api.md#bcsliverappheader) · [`BCHeaderIconButton`](doc/api.md#bcheadericonbutton) · [`BCBottomNav`](doc/api.md#bcbottomnav) · [`BCTabs`](doc/api.md#bctabs) · [`BCTabView`](doc/api.md#bctabview) |
+| **Navigation** | [`BCAppHeader`](doc/api.md#bcappheader) · [`BCSliverAppHeader`](doc/api.md#bcsliverappheader) · [`BCHeaderIconButton`](doc/api.md#bcheadericonbutton) · [`BCBottomNav`](doc/api.md#bcbottomnav) · [`BCNavRail`](doc/api.md#bcnavrail) · [`BCNavDrawer`](doc/api.md#bcnavdrawer) · [`BCToolbar`](doc/api.md#bctoolbar) · [`BCTabs`](doc/api.md#bctabs) · [`BCTabView`](doc/api.md#bctabview) |
 | **Actions** | [`BCButton`](doc/api.md#bcbutton) · [`BCLinkButton`](doc/api.md#bclinkbutton) · [`BCCloseButton`](doc/api.md#bcclosebutton) · [`BCFab`](doc/api.md#bcfab) · [`BCSpeedDial`](doc/api.md#bcspeeddial) · [`BCToggleButton`](doc/api.md#bctogglebutton) · [`BCToggleButtonGroup`](doc/api.md#bctogglebuttongroup) · [`BCPressable`](doc/api.md#bcpressable) |
 | **Containers** | [`BCSurface`](doc/api.md#bcsurface) · [`BCCard`](doc/api.md#bccard) · [`BCListGroup`](doc/api.md#bclistgroup) · [`BCFlipCard`](doc/api.md#bcflipcard) · [`BCScrollShadow`](doc/api.md#bcscrollshadow) |
-| **Data display** | [`BCText`](doc/api.md#bctext) · [`BCAvatar`](doc/api.md#bcavatar) · [`BCChip`](doc/api.md#bcchip) · [`BCTagGroup`](doc/api.md#bctaggroup) · [`BCSeparator`](doc/api.md#bcseparator) · [`BCSkeleton`](doc/api.md#bcskeleton) · [`BCSpinner`](doc/api.md#bcspinner) · [`BCRating`](doc/api.md#bcrating) · [`BCEmptyState`](doc/api.md#bcemptystate) |
+| **Data display** | [`BCText`](doc/api.md#bctext) · [`BCAvatar`](doc/api.md#bcavatar) · [`BCChip`](doc/api.md#bcchip) · [`BCTagGroup`](doc/api.md#bctaggroup) · [`BCSeparator`](doc/api.md#bcseparator) · [`BCSkeleton`](doc/api.md#bcskeleton) · [`BCSpinner`](doc/api.md#bcspinner) · [`BCProgress`](doc/api.md#bcprogress) · [`BCLoadingOverlay`](doc/api.md#bcloadingoverlay) · [`BCRating`](doc/api.md#bcrating) · [`BCEmptyState`](doc/api.md#bcemptystate) |
 | **Forms** | [`BCInput`](doc/api.md#bcinput) · [`BCTextField`](doc/api.md#bctextfield) · [`BCTextArea`](doc/api.md#bctextarea) · [`BCPasswordInput`](doc/api.md#bcpasswordinput) · [`BCSearchField`](doc/api.md#bcsearchfield) · [`BCInputOTP`](doc/api.md#bcinputotp) · [`BCDateField`](doc/api.md#bcdatefield) · [`BCTimeField`](doc/api.md#bctimefield) · [`BCSelect`](doc/api.md#bcselect) · [`BCControlField`](doc/api.md#bccontrolfield) |
-| **Selection** | [`BCCheckbox`](doc/api.md#bccheckbox) · [`BCRadioGroup`](doc/api.md#bcradiogroup) · [`BCSwitch`](doc/api.md#bcswitch) · [`BCSlider`](doc/api.md#bcslider) |
+| **Selection** | [`BCCheckbox`](doc/api.md#bccheckbox) · [`BCRadioGroup`](doc/api.md#bcradiogroup) · [`BCSwitch`](doc/api.md#bcswitch) · [`BCSlider`](doc/api.md#bcslider) · [`BCRangeSlider`](doc/api.md#bcrangeslider) |
 | **Overlays** | [`BCDialog`](doc/api.md#bcdialog) · [`BCPopover`](doc/api.md#bcpopover) · [`BCMenu`](doc/api.md#bcmenu) · [`BCToast`](doc/api.md#bctoast) |
 
 Naming is predictable across the library: `variant` picks the look, `size`

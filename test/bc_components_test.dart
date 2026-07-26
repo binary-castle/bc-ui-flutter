@@ -768,6 +768,33 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
+    testWidgets('onPressed fires on pointer-up, never gated on the press hold',
+        (tester) async {
+      // BCPressable holds the *visual* press for a minimum of 150ms so quick
+      // taps are perceivable. The callback must not wait on it.
+      var fired = 0;
+      await tester.pumpWidget(
+        _app(
+          BCButton(onPressed: () => fired++, child: const Text('Tap')),
+        ),
+      );
+
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.text('Tap')),
+      );
+      await gesture.up();
+      expect(fired, 1, reason: 'no pump happened: the callback was immediate');
+
+      // A second tap during the previous release still reacts immediately.
+      final again = await tester.startGesture(
+        tester.getCenter(find.text('Tap')),
+      );
+      await again.up();
+      expect(fired, 2);
+
+      await tester.pump(const Duration(milliseconds: 400));
+    });
+
     testWidgets('material feedback renders an InkWell', (tester) async {
       await tester.pumpWidget(
         _app(
@@ -917,6 +944,360 @@ void main() {
       await tester.tap(find.text('Podcasts'));
       await tester.pumpAndSettle();
       expect(controller.value, 'podcasts');
+    });
+  });
+
+  group('BCProgress', () {
+    testWidgets('renders determinate value label and animates to it',
+        (tester) async {
+      await tester.pumpWidget(
+        _app(
+          const SizedBox(
+            width: 300,
+            child: BCProgress(
+              value: 0.4,
+              label: 'Uploading',
+              showValueLabel: true,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Uploading'), findsOneWidget);
+      expect(find.text('40%'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('indeterminate keeps ticking without exceptions',
+        (tester) async {
+      await tester.pumpWidget(
+        _app(
+          const SizedBox(
+            width: 300,
+            child: BCProgress(variant: BCProgressVariant.circular),
+          ),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(tester.takeException(), isNull);
+
+      // A repeating controller never settles; end the test cleanly.
+      await tester.pumpWidget(_app(const SizedBox.shrink()));
+    });
+
+    testWidgets('rejects an out-of-range value', (tester) async {
+      expect(() => BCProgress(value: 1.5), throwsAssertionError);
+    });
+  });
+
+  group('BCLoadingOverlay', () {
+    testWidgets('blocks taps on the content while loading', (tester) async {
+      var taps = 0;
+
+      Widget build(bool loading) => _app(
+            SizedBox(
+              width: 300,
+              height: 300,
+              child: BCLoadingOverlay(
+                isLoading: loading,
+                label: 'Saving',
+                child: BCButton(
+                  onPressed: () => taps++,
+                  child: const Text('Save'),
+                ),
+              ),
+            ),
+          );
+
+      await tester.pumpWidget(build(false));
+      await tester.tap(find.text('Save'));
+      expect(taps, 1);
+      expect(find.text('Saving'), findsNothing);
+
+      await tester.pumpWidget(build(true));
+      // BCSpinner never stops, so pumpAndSettle would time out here.
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('Saving'), findsOneWidget);
+
+      await tester.tap(find.text('Save'), warnIfMissed: false);
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(taps, 1, reason: 'overlay should swallow the tap');
+
+      await tester.pumpWidget(build(false));
+      await tester.pump(const Duration(milliseconds: 300));
+    });
+  });
+
+  group('BCNavRail', () {
+    List<BCNavRailDestination> destinations() => const [
+          BCNavRailDestination(icon: Icon(Icons.inbox), label: 'Inbox', badgeCount: 3),
+          BCNavRailDestination(icon: Icon(Icons.send), label: 'Sent'),
+        ];
+
+    testWidgets('reports taps and shows badges', (tester) async {
+      var index = 0;
+      await tester.pumpWidget(
+        StatefulBuilder(
+          builder: (context, setState) => _app(
+            SizedBox(
+              height: 400,
+              child: BCNavRail(
+                destinations: destinations(),
+                selectedIndex: index,
+                onDestinationSelected: (i) => setState(() => index = i),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('3'), findsOneWidget);
+      await tester.tap(find.text('Sent'));
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpAndSettle();
+      expect(index, 1);
+    });
+
+    testWidgets('extended widens the rail and keeps labels', (tester) async {
+      Widget build(bool extended) => _app(
+            SizedBox(
+              height: 400,
+              child: BCNavRail(
+                destinations: destinations(),
+                selectedIndex: 0,
+                onDestinationSelected: (_) {},
+                extended: extended,
+              ),
+            ),
+          );
+
+      await tester.pumpWidget(build(false));
+      await tester.pumpAndSettle();
+      expect(tester.getSize(find.byType(BCNavRail)).width, 80);
+
+      await tester.pumpWidget(build(true));
+      await tester.pumpAndSettle();
+      expect(tester.getSize(find.byType(BCNavRail)).width, 232);
+      expect(find.text('Inbox'), findsOneWidget);
+    });
+
+    testWidgets('labels=none hides labels', (tester) async {
+      await tester.pumpWidget(
+        _app(
+          SizedBox(
+            height: 400,
+            child: BCNavRail(
+              destinations: destinations(),
+              selectedIndex: 0,
+              onDestinationSelected: (_) {},
+              labels: BCNavRailLabels.none,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Inbox'), findsNothing);
+    });
+  });
+
+  group('BCNavDrawer', () {
+    testWidgets('selection index counts destinations, not sections',
+        (tester) async {
+      var selected = -1;
+      await tester.pumpWidget(
+        _app(
+          SizedBox(
+            height: 600,
+            child: BCNavDrawer(
+              selectedIndex: 0,
+              onDestinationSelected: (i) => selected = i,
+              header: const Text('Mailbox'),
+              items: const [
+                BCNavDrawerSection('Mail'),
+                BCNavDrawerDestination(icon: Icon(Icons.inbox), label: 'Inbox'),
+                BCNavDrawerDivider(),
+                BCNavDrawerSection('Labels'),
+                BCNavDrawerDestination(icon: Icon(Icons.work), label: 'Work'),
+              ],
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Mailbox'), findsOneWidget);
+      expect(find.text('Labels'), findsOneWidget);
+
+      // 'Work' is the second destination despite three items before it.
+      await tester.tap(find.text('Work'));
+      // BCPressable holds a minimum-press timer; give it time to expire.
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpAndSettle();
+      expect(selected, 1);
+    });
+
+    testWidgets('disabled destination does not report taps', (tester) async {
+      var selected = -1;
+      await tester.pumpWidget(
+        _app(
+          SizedBox(
+            height: 400,
+            child: BCNavDrawer(
+              selectedIndex: 0,
+              onDestinationSelected: (i) => selected = i,
+              items: const [
+                BCNavDrawerDestination(icon: Icon(Icons.inbox), label: 'Inbox'),
+                BCNavDrawerDestination(
+                  icon: Icon(Icons.delete),
+                  label: 'Trash',
+                  isDisabled: true,
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Trash'), warnIfMissed: false);
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpAndSettle();
+      expect(selected, -1);
+    });
+  });
+
+  group('BCRangeSlider', () {
+    testWidgets('drags the nearer thumb and keeps start <= end',
+        (tester) async {
+      var range = const BCRange(0.2, 0.8);
+
+      await tester.pumpWidget(
+        StatefulBuilder(
+          builder: (context, setState) => _app(
+            SizedBox(
+              width: 328, // 300 usable + one thumb width
+              child: BCRangeSlider(
+                values: range,
+                onChanged: (value) => setState(() => range = value),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final slider = find.byType(BCRangeSlider);
+      final origin = tester.getTopLeft(slider);
+
+      // Drag near the end thumb, pushing it past the start thumb's position.
+      await tester.dragFrom(
+        origin + const Offset(254, 10),
+        const Offset(-220, 0),
+      );
+      await tester.pumpAndSettle();
+
+      expect(range.end, greaterThanOrEqualTo(range.start));
+      expect(range.start, closeTo(0.2, 0.05), reason: 'start thumb untouched');
+    });
+
+    testWidgets('respects minSeparation', (tester) async {
+      var range = const BCRange(4, 20);
+
+      await tester.pumpWidget(
+        StatefulBuilder(
+          builder: (context, setState) => _app(
+            SizedBox(
+              width: 328,
+              child: BCRangeSlider(
+                values: range,
+                minValue: 0,
+                maxValue: 24,
+                step: 1,
+                minSeparation: 4,
+                onChanged: (value) => setState(() => range = value),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final origin = tester.getTopLeft(find.byType(BCRangeSlider));
+      await tester.dragFrom(
+        origin + const Offset(264, 10),
+        const Offset(-240, 0),
+      );
+      await tester.pumpAndSettle();
+
+      expect(range.end - range.start, greaterThanOrEqualTo(4 - 0.001));
+    });
+  });
+
+  group('BCToolbar', () {
+    testWidgets('renders actions and the primary action in both variants',
+        (tester) async {
+      for (final variant in BCToolbarVariant.values) {
+        await tester.pumpWidget(
+          _app(
+            SizedBox(
+              width: 360,
+              child: BCToolbar(
+                variant: variant,
+                primaryAction: BCFab(
+                  icon: const Icon(Icons.check),
+                  onPressed: () {},
+                ),
+                children: [
+                  BCHeaderIconButton(
+                    icon: const Icon(Icons.undo),
+                    onPressed: () {},
+                  ),
+                  BCHeaderIconButton(
+                    icon: const Icon(Icons.redo),
+                    onPressed: () {},
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byIcon(Icons.undo), findsOneWidget, reason: '$variant');
+        expect(find.byIcon(Icons.check), findsOneWidget, reason: '$variant');
+        expect(tester.takeException(), isNull, reason: '$variant');
+      }
+    });
+
+    testWidgets('vertical axis stacks the actions', (tester) async {
+      await tester.pumpWidget(
+        _app(
+          SizedBox(
+            height: 320,
+            child: BCToolbar(
+              axis: BCToolbarAxis.vertical,
+              children: [
+                BCHeaderIconButton(
+                  icon: const Icon(Icons.undo),
+                  onPressed: () {},
+                ),
+                BCHeaderIconButton(
+                  icon: const Icon(Icons.redo),
+                  onPressed: () {},
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final undo = tester.getCenter(find.byIcon(Icons.undo));
+      final redo = tester.getCenter(find.byIcon(Icons.redo));
+      expect(redo.dy, greaterThan(undo.dy));
+      expect(redo.dx, closeTo(undo.dx, 0.5));
     });
   });
 

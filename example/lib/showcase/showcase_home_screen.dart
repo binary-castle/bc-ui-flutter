@@ -19,8 +19,11 @@ import 'package:example/showcase/screens/input_showcase_screen.dart';
 import 'package:example/showcase/screens/link_button_showcase_screen.dart';
 import 'package:example/showcase/screens/list_group_showcase_screen.dart';
 import 'package:example/showcase/screens/menu_showcase_screen.dart';
+import 'package:example/showcase/screens/navigation_showcase_screen.dart';
 import 'package:example/showcase/screens/popover_showcase_screen.dart';
+import 'package:example/showcase/screens/progress_showcase_screen.dart';
 import 'package:example/showcase/screens/radio_group_showcase_screen.dart';
+import 'package:example/showcase/screens/range_slider_showcase_screen.dart';
 import 'package:example/showcase/screens/rating_showcase_screen.dart';
 import 'package:example/showcase/screens/scroll_shadow_showcase_screen.dart';
 import 'package:example/showcase/screens/search_field_showcase_screen.dart';
@@ -38,6 +41,7 @@ import 'package:example/showcase/screens/text_field_showcase_screen.dart';
 import 'package:example/showcase/screens/time_field_showcase_screen.dart';
 import 'package:example/showcase/screens/toast_showcase_screen.dart';
 import 'package:example/showcase/screens/toggle_button_showcase_screen.dart';
+import 'package:example/showcase/screens/toolbar_showcase_screen.dart';
 import 'package:example/showcase/screens/typography_showcase_screen.dart';
 import 'package:flutter/material.dart';
 
@@ -73,8 +77,14 @@ final List<ComponentEntry> componentRegistry = [
   ),
   ComponentEntry('ListGroup', (_) => const ListGroupShowcaseScreen()),
   ComponentEntry('Menu', (_) => const MenuShowcaseScreen()),
+  ComponentEntry(
+    'NavRail & NavDrawer',
+    (_) => const NavigationShowcaseScreen(),
+  ),
   ComponentEntry('Popover', (_) => const PopoverShowcaseScreen()),
+  ComponentEntry('Progress & Loading', (_) => const ProgressShowcaseScreen()),
   ComponentEntry('RadioGroup', (_) => const RadioGroupShowcaseScreen()),
+  ComponentEntry('RangeSlider', (_) => const RangeSliderShowcaseScreen()),
   ComponentEntry('Rating', (_) => const RatingShowcaseScreen()),
   ComponentEntry('ScrollShadow', (_) => const ScrollShadowShowcaseScreen()),
   ComponentEntry('SearchField', (_) => const SearchFieldShowcaseScreen()),
@@ -92,6 +102,7 @@ final List<ComponentEntry> componentRegistry = [
   ComponentEntry('TimeField', (_) => const TimeFieldShowcaseScreen()),
   ComponentEntry('Toast', (_) => const ToastShowcaseScreen()),
   ComponentEntry('ToggleButton', (_) => const ToggleButtonShowcaseScreen()),
+  ComponentEntry('Toolbar', (_) => const ToolbarShowcaseScreen()),
   ComponentEntry('Typography', (_) => const TypographyShowcaseScreen()),
 ];
 

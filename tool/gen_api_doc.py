@@ -139,7 +139,8 @@ ENUMS = {k: v for k, v in API.items() if v['kind'] == 'enum'}
 CATALOG = [
     ('Navigation', [
         'BCAppHeader', 'BCSliverAppHeader', 'BCHeaderIconButton',
-        'BCBottomNav', 'BCTabs', 'BCTabView',
+        'BCBottomNav', 'BCNavRail', 'BCNavDrawer', 'BCToolbar',
+        'BCTabs', 'BCTabView',
     ]),
     ('Actions', [
         'BCButton', 'BCLinkButton', 'BCCloseButton', 'BCFab', 'BCSpeedDial',
@@ -150,14 +151,17 @@ CATALOG = [
     ]),
     ('Data display', [
         'BCText', 'BCAvatar', 'BCChip', 'BCTagGroup', 'BCSeparator',
-        'BCSkeleton', 'BCSpinner', 'BCRating', 'BCEmptyState',
+        'BCSkeleton', 'BCSpinner', 'BCProgress', 'BCLoadingOverlay',
+        'BCRating', 'BCEmptyState',
     ]),
     ('Forms', [
         'BCInput', 'BCTextField', 'BCTextArea', 'BCPasswordInput',
         'BCSearchField', 'BCInputOTP', 'BCDateField', 'BCTimeField',
         'BCSelect', 'BCControlField',
     ]),
-    ('Selection', ['BCCheckbox', 'BCRadioGroup', 'BCSwitch', 'BCSlider']),
+    ('Selection', [
+        'BCCheckbox', 'BCRadioGroup', 'BCSwitch', 'BCSlider', 'BCRangeSlider',
+    ]),
     ('Overlays', ['BCDialog', 'BCPopover', 'BCMenu', 'BCToast']),
 ]
 
@@ -167,6 +171,12 @@ SUMMARY = {
     'BCSliverAppHeader': 'Pinned sliver header with an iOS-style large title that collapses into the compact toolbar title. Put it first in a `CustomScrollView`.',
     'BCHeaderIconButton': 'Round 40px icon button for header leading/action slots, with optional fill and badges.',
     'BCBottomNav': 'Bottom navigation bar — full-width or detached/floating — with an accent-soft pill indicator and badges.',
+    'BCNavRail': 'Vertical navigation for medium and larger windows — the counterpart to `BCBottomNav` on compact ones. Collapsed it is an 80px icon strip; `extended` widens it so labels sit beside the icons, and the width change animates.',
+    'BCNavDrawer': 'Wide vertical navigation, inline on large windows (`standard`) or sliding over content from `Scaffold.drawer` (`modal`). Items mix destinations with section labels and dividers; `selectedIndex` counts destinations only.',
+    'BCToolbar': 'A bar of actions for the current screen — the bottom-of-screen counterpart to `BCAppHeader`. Docked to the edge or floating as a rounded pill, horizontal or vertical, optionally frosted.',
+    'BCProgress': 'Determinate and indeterminate progress, linear or circular, with an optional label and percentage. Determinate changes ease into place instead of snapping.',
+    'BCLoadingOverlay': 'Covers a page or section while work is in flight: fades in a dim or blurred backdrop, blocks input underneath, and centers an indicator with an optional label.',
+    'BCRangeSlider': 'Two-thumb slider for a start/end range — price filters, time windows, thresholds. Shares `BCSlider`\'s metrics and spring.',
     'BCTabs': 'Segmented control. Drive it with `value` + `onValueChange`, or hand it a `BCTabsController` to pair it with a swipeable `BCTabView`.',
     'BCTabView': 'The swipeable panels behind a `BCTabs` bar. Sharing a controller means a drag switches tabs and carries the indicator with it.',
     'BCButton': 'The primary action component: 7 variants x 3 sizes, optional leading/trailing content, icon-only and full-width modes.',
@@ -289,6 +299,96 @@ Column(
       ),
     ),
   ],
+);''',
+    'BCNavRail': '''Row(
+  children: [
+    BCNavRail(
+      selectedIndex: index,
+      onDestinationSelected: (i) => setState(() => index = i),
+      // Widen it once the window is big enough; the change animates.
+      extended: MediaQuery.sizeOf(context).width >= 1240,
+      leading: BCFab(icon: const Icon(Icons.edit), size: 48, onPressed: () {}),
+      trailing: BCHeaderIconButton(
+        icon: const Icon(Icons.settings_outlined),
+        onPressed: () {},
+      ),
+      destinations: const [
+        BCNavRailDestination(
+          icon: Icon(Icons.inbox_outlined),
+          selectedIcon: Icon(Icons.inbox),
+          label: 'Inbox',
+          badgeCount: 12,
+        ),
+        BCNavRailDestination(icon: Icon(Icons.send_outlined), label: 'Sent'),
+      ],
+    ),
+    const Expanded(child: Body()),
+  ],
+);''',
+    'BCNavDrawer': '''Scaffold(
+  drawer: BCNavDrawer(
+    variant: BCNavDrawerVariant.modal,
+    selectedIndex: index,
+    onDestinationSelected: (i) => setState(() => index = i),
+    header: const Text('Binary Castle'),
+    items: const [
+      BCNavDrawerSection('Mail'),
+      BCNavDrawerDestination(
+        icon: Icon(Icons.inbox_outlined),
+        selectedIcon: Icon(Icons.inbox),
+        label: 'Inbox',
+        badgeCount: 24,
+      ),
+      BCNavDrawerDivider(),
+      BCNavDrawerSection('Labels'),
+      BCNavDrawerDestination(icon: Icon(Icons.work_outline), label: 'Work'),
+    ],
+  ),
+);''',
+    'BCToolbar': '''Scaffold(
+  bottomNavigationBar: BCToolbar(
+    primaryAction: BCFab(icon: const Icon(Icons.check), size: 48, onPressed: () {}),
+    children: [
+      BCHeaderIconButton(icon: const Icon(Icons.undo), onPressed: () {}),
+      BCHeaderIconButton(icon: const Icon(Icons.redo), onPressed: () {}),
+      BCHeaderIconButton(icon: const Icon(Icons.palette_outlined), onPressed: () {}),
+    ],
+  ),
+);
+
+// Floating pill over the content, frosted so it reads over anything.
+BCToolbar(
+  variant: BCToolbarVariant.floating,
+  blurred: true,
+  children: [...],
+);''',
+    'BCProgress': '''BCProgress(value: 0.4, label: 'Uploading', showValueLabel: true);
+
+// Indeterminate until you know the total.
+const BCProgress(variant: BCProgressVariant.circular);
+
+BCProgress(
+  value: bytes / total,
+  size: BCProgressSize.lg,
+  color: BCProgressColor.success,
+  formatValue: (v) => '${(v * total / 1e6).round()} MB',
+);''',
+    'BCLoadingOverlay': '''BCLoadingOverlay(
+  isLoading: _saving,
+  label: 'Saving changes',
+  backdrop: BCLoadingBackdrop.blur,
+  child: ProfileForm(),
+);''',
+    'BCRangeSlider': '''BCRangeSlider(
+  values: range,
+  minValue: 0,
+  maxValue: 500,
+  step: 10,
+  minSeparation: 50, // thumbs cannot come closer than this
+  label: 'Price',
+  showOutput: true,
+  formatOutput: (value) => '\$${value.round()}',
+  onChanged: (value) => setState(() => range = value),
 );''',
     'BCButton': '''BCButton(
   variant: BCButtonVariant.secondary,
@@ -526,6 +626,11 @@ SUBPARTS = {
     'BCCard': ['BCCardHeader', 'BCCardBody', 'BCCardFooter', 'BCCardTitle', 'BCCardDescription'],
     'BCListGroup': ['BCListGroupItem'],
     'BCTabs': ['BCTabItem', 'BCTabsController'],
+    'BCNavRail': ['BCNavRailDestination'],
+    'BCNavDrawer': [
+        'BCNavDrawerDestination', 'BCNavDrawerSection', 'BCNavDrawerDivider',
+    ],
+    'BCRangeSlider': ['BCRange'],
     'BCBottomNav': ['BCBottomNavItem'],
     'BCAvatar': ['BCAvatarImage', 'BCAvatarFallback'],
     'BCTextField': ['BCTextFieldLabel', 'BCTextFieldInput', 'BCTextFieldDescription', 'BCTextFieldError'],
