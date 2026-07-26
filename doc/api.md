@@ -20,7 +20,6 @@ source, so they track the code.
 - [Forms](#forms) — `BCInput`, `BCTextField`, `BCTextArea`, `BCPasswordInput`, `BCSearchField`, `BCInputOTP`, `BCDateField`, `BCTimeField`, `BCSelect`, `BCControlField`
 - [Selection](#selection) — `BCCheckbox`, `BCRadioGroup`, `BCSwitch`, `BCSlider`
 - [Overlays](#overlays) — `BCDialog`, `BCPopover`, `BCMenu`, `BCToast`
-- [Layouts](#layouts) — `BCAuthBackground`
 
 ---
 
@@ -1742,17 +1741,5 @@ BCToast.show(context, const BCToastData(
 | `bottomInset` | `double` | `16` | Distance from the bottom safe area to the front toast. |
 
 </details>
-
----
-
-## Layouts
-
-### BCAuthBackground
-
-Decorative auth-screen canvas: diagonal gradient plus two accent blobs, all pointer-transparent so taps reach the child.
-
-| Prop | Type | Default | Notes |
-|---|---|---|---|
-| `child` | `Widget` | required |  |
 
 ---

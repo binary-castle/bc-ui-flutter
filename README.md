@@ -143,7 +143,6 @@ Full props, defaults and enums for every entry: **[API reference](doc/api.md)**.
 | **Forms** | [`BCInput`](doc/api.md#bcinput) · [`BCTextField`](doc/api.md#bctextfield) · [`BCTextArea`](doc/api.md#bctextarea) · [`BCPasswordInput`](doc/api.md#bcpasswordinput) · [`BCSearchField`](doc/api.md#bcsearchfield) · [`BCInputOTP`](doc/api.md#bcinputotp) · [`BCDateField`](doc/api.md#bcdatefield) · [`BCTimeField`](doc/api.md#bctimefield) · [`BCSelect`](doc/api.md#bcselect) · [`BCControlField`](doc/api.md#bccontrolfield) |
 | **Selection** | [`BCCheckbox`](doc/api.md#bccheckbox) · [`BCRadioGroup`](doc/api.md#bcradiogroup) · [`BCSwitch`](doc/api.md#bcswitch) · [`BCSlider`](doc/api.md#bcslider) |
 | **Overlays** | [`BCDialog`](doc/api.md#bcdialog) · [`BCPopover`](doc/api.md#bcpopover) · [`BCMenu`](doc/api.md#bcmenu) · [`BCToast`](doc/api.md#bctoast) |
-| **Layouts** | [`BCAuthBackground`](doc/api.md#bcauthbackground) |
 
 Naming is predictable across the library: `variant` picks the look, `size`
 picks the metrics, state is controlled (`value` + `onValueChange`), and

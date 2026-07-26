@@ -159,7 +159,6 @@ CATALOG = [
     ]),
     ('Selection', ['BCCheckbox', 'BCRadioGroup', 'BCSwitch', 'BCSlider']),
     ('Overlays', ['BCDialog', 'BCPopover', 'BCMenu', 'BCToast']),
-    ('Layouts', ['BCAuthBackground']),
 ]
 
 # One-liners that override / sharpen the source dartdoc for the doc index.
@@ -209,7 +208,6 @@ SUMMARY = {
     'BCDialog': 'Modal dialog (static `show`, plus content/title/description parts).',
     'BCPopover': 'Anchored popover that flips and clamps to stay on screen.',
     'BCMenu': 'Anchored menu with items, labels, separators and a danger variant.',
-    'BCAuthBackground': 'Decorative auth-screen canvas: diagonal gradient plus two accent blobs, all pointer-transparent so taps reach the child.',
     'BCToast': 'Transient message queue; `BCToastProvider` hosts it above the app.',
 }
 
