@@ -1,3 +1,4 @@
+import 'package:bc_ui/src/theme/theme_extensions.dart';
 import 'package:bc_ui/src/tokens/tokens.dart';
 import 'package:flutter/material.dart';
 
@@ -9,17 +10,18 @@ enum BCAvatarColor { accent, defaultColor, success, warning, danger }
 
 enum BCAvatarStatus { loading, loaded, error }
 
+/// Avatar styling from heroui-native's avatar.css: sizes 40/48/64,
+/// 32px continuous corners, `default` background or per-color soft
+/// backgrounds, medium-weight fallback text in the soft foreground color.
 abstract final class BCAvatarTheme {
-  static const _softAlpha = 0.15;
-
   static double diameter(BCAvatarSize size) {
     switch (size) {
       case BCAvatarSize.small:
-        return BCSizes.avatarSm;
+        return 40;
       case BCAvatarSize.medium:
-        return BCSizes.avatarMd;
+        return 48;
       case BCAvatarSize.large:
-        return BCSizes.avatarLg;
+        return 64;
     }
   }
 
@@ -34,67 +36,60 @@ abstract final class BCAvatarTheme {
     }
   }
 
-  static Color semanticColor(BCAvatarColor color, ColorScheme colors) {
-    switch (color) {
-      case BCAvatarColor.accent:
-        return colors.primary;
-      case BCAvatarColor.defaultColor:
-        return colors.onSurface;
-      case BCAvatarColor.success:
-        return BCColors.success;
-      case BCAvatarColor.warning:
-        return BCColors.warning;
-      case BCAvatarColor.danger:
-        return colors.error;
-    }
-  }
+  static ShapeBorder shape() => BCShapes.continuous(BCRadius.xxxxl);
 
   static Color backgroundColor({
     required BCAvatarVariant variant,
     required BCAvatarColor color,
-    required ColorScheme colors,
+    required BCThemeExtension bc,
   }) {
     switch (variant) {
       case BCAvatarVariant.defaultVariant:
-        return colors.surfaceContainerHighest;
+        return bc.defaultColor;
       case BCAvatarVariant.soft:
-        return semanticColor(color, colors).withValues(alpha: _softAlpha);
+        return switch (color) {
+          BCAvatarColor.accent => bc.accentSoft,
+          BCAvatarColor.defaultColor => bc.defaultColor,
+          BCAvatarColor.success => bc.successSoft,
+          BCAvatarColor.warning => bc.warningSoft,
+          BCAvatarColor.danger => bc.dangerSoft,
+        };
     }
   }
 
   static Color foregroundColor({
     required BCAvatarColor color,
-    required ColorScheme colors,
+    required BCThemeExtension bc,
   }) {
-    return semanticColor(color, colors);
+    return switch (color) {
+      BCAvatarColor.accent => bc.accentSoftForeground,
+      BCAvatarColor.defaultColor => bc.defaultSoftForeground,
+      BCAvatarColor.success => bc.successSoftForeground,
+      BCAvatarColor.warning => bc.warningSoftForeground,
+      BCAvatarColor.danger => bc.dangerSoftForeground,
+    };
   }
 
-  static TextStyle fallbackTextStyle(
-    BCAvatarSize size,
-    TextTheme textTheme,
-    Color foreground,
-  ) {
-    final fontSize = switch (size) {
-      BCAvatarSize.small => 14.0,
-      BCAvatarSize.medium => 16.0,
-      BCAvatarSize.large => 20.0,
+  static TextStyle fallbackTextStyle(BCAvatarSize size, Color foreground) {
+    final base = switch (size) {
+      BCAvatarSize.small => BCTypography.textXs,
+      BCAvatarSize.medium => BCTypography.textSm,
+      BCAvatarSize.large => BCTypography.textBase,
     };
-
-    return (textTheme.labelLarge ?? const TextStyle()).copyWith(
-      fontSize: fontSize,
-      fontWeight: FontWeight.w500,
+    return base.copyWith(
+      fontWeight: BCTypography.medium,
       color: foreground,
     );
   }
 
-  static BoxDecoration decoration({
+  static ShapeDecoration decoration({
     required BCAvatarVariant variant,
     required BCAvatarColor color,
-    required ColorScheme colors,
+    required BCThemeExtension bc,
   }) {
-    return BoxDecoration(
-      color: backgroundColor(variant: variant, color: color, colors: colors),
-      shape: BoxShape.circle,
+    return ShapeDecoration(
+      color: backgroundColor(variant: variant, color: color, bc: bc),
+      shape: shape(),
     );
   }
 }

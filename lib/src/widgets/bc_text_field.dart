@@ -1,12 +1,16 @@
-import 'package:bc_ui/src/extensions/context_extension.dart';
-import 'package:bc_ui/src/theme/component_themes/input_theme.dart';
-import 'package:bc_ui/src/tokens/tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-export 'package:bc_ui/src/theme/component_themes/input_theme.dart'
-    show BCTextFieldVariant;
+import 'bc_input.dart';
+import 'field_parts/bc_description.dart';
+import 'field_parts/bc_field_error.dart';
+import 'field_parts/bc_label.dart';
 
+export 'bc_input.dart' show BCInputVariant;
+
+/// HeroUI Native TextField: a vertical stack (gap 6, text-field.css) of
+/// Label / Input / Description / ErrorMessage parts that share invalid,
+/// disabled, and required state through an inherited scope.
 class BCTextField extends StatelessWidget {
   const BCTextField({
     super.key,
@@ -29,21 +33,10 @@ class BCTextField extends StatelessWidget {
       isRequired: isRequired,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: _withGap(children),
+        spacing: 6,
+        children: children,
       ),
     );
-  }
-
-  List<Widget> _withGap(List<Widget> items) {
-    if (items.isEmpty) return const [];
-
-    final result = <Widget>[items.first];
-    for (var i = 1; i < items.length; i++) {
-      result
-        ..add(const SizedBox(height: BCSpacing.xs))
-        ..add(items[i]);
-    }
-    return result;
   }
 }
 
@@ -56,27 +49,12 @@ class BCTextFieldLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scope = _BCTextFieldScope.of(context);
-    final invalid = isInvalid ?? scope?.isInvalid ?? false;
-    final required = scope?.isRequired ?? false;
-    final colors = context.colors;
-    final textTheme = context.text;
-
-    final style = invalid
-        ? BCInputTheme.labelInvalidStyle(textTheme, colors)
-        : BCInputTheme.labelStyle(textTheme, colors);
-
-    return Text.rich(
-      TextSpan(
-        children: [
-          TextSpan(text: text),
-          if (required)
-            TextSpan(
-              text: ' *',
-              style: style.copyWith(color: colors.error),
-            ),
-        ],
-      ),
-      style: style,
+    return BCLabel(
+      text,
+      isRequired: scope?.isRequired ?? false,
+      isInvalid: isInvalid ?? scope?.isInvalid ?? false,
+      isDisabled: scope?.isDisabled ?? false,
+      isInsideField: true,
     );
   }
 }
@@ -88,9 +66,11 @@ class BCTextFieldDescription extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(
+    final scope = _BCTextFieldScope.of(context);
+    return BCDescription(
       text,
-      style: BCInputTheme.descriptionStyle(context.text, context.colors),
+      isDisabled: scope?.isDisabled ?? false,
+      isInsideField: true,
     );
   }
 }
@@ -106,11 +86,7 @@ class BCTextFieldError extends StatelessWidget {
     if (scope != null && !scope.isInvalid) {
       return const SizedBox.shrink();
     }
-
-    return Text(
-      message,
-      style: BCInputTheme.errorStyle(context.text, context.colors),
-    );
+    return BCFieldError(message, isInsideField: true);
   }
 }
 
@@ -119,7 +95,7 @@ class BCTextFieldInput extends StatelessWidget {
     super.key,
     this.controller,
     this.focusNode,
-    this.variant = BCTextFieldVariant.primary,
+    this.variant = BCInputVariant.primary,
     this.isInvalid,
     this.isDisabled,
     this.hintText,
@@ -143,7 +119,7 @@ class BCTextFieldInput extends StatelessWidget {
 
   final TextEditingController? controller;
   final FocusNode? focusNode;
-  final BCTextFieldVariant variant;
+  final BCInputVariant variant;
   final bool? isInvalid;
   final bool? isDisabled;
   final String? hintText;
@@ -167,69 +143,30 @@ class BCTextFieldInput extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scope = _BCTextFieldScope.of(context);
-    final colors = context.colors;
-    final textTheme = context.text;
 
-    final invalid = isInvalid ?? scope?.isInvalid ?? false;
-    final disabled = isDisabled ?? scope?.isDisabled ?? false;
-
-    final field = Theme(
-      data: Theme.of(context).copyWith(
-        textSelectionTheme: TextSelectionThemeData(
-          cursorColor: BCInputTheme.cursorColor(colors, isInvalid: invalid),
-          selectionColor: BCInputTheme.selectionColor(
-            colors,
-            isInvalid: invalid,
-          ),
-        ),
-      ),
-      child: TextField(
-        controller: controller,
-        focusNode: focusNode,
-        enabled: !disabled,
-        readOnly: readOnly,
-        autofocus: autofocus,
-        obscureText: obscureText,
-        maxLines: maxLines,
-        minLines: minLines,
-        keyboardType: keyboardType,
-        textInputAction: textInputAction,
-        inputFormatters: inputFormatters,
-        onChanged: onChanged,
-        onSubmitted: onSubmitted,
-        onTap: onTap,
-        textCapitalization: textCapitalization,
-        autocorrect: autocorrect,
-        enableSuggestions: enableSuggestions,
-        style: textTheme.bodyLarge,
-        decoration: BCInputTheme.decoration(
-          colors: colors,
-          textTheme: textTheme,
-          variant: variant,
-          isInvalid: invalid,
-          isDisabled: disabled,
-          hintText: hintText,
-          prefix: prefix,
-          suffix: suffix,
-        ),
-      ),
-    );
-
-    final input = variant == BCTextFieldVariant.primary
-        ? DecoratedBox(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(BCRadius.md),
-              boxShadow: BCInputTheme.fieldShadow(colors),
-            ),
-            child: field,
-          )
-        : field;
-
-    if (!disabled) return input;
-
-    return Opacity(
-      opacity: BCInputTheme.disabledOpacity,
-      child: IgnorePointer(child: input),
+    return BCInput(
+      controller: controller,
+      focusNode: focusNode,
+      variant: variant,
+      placeholder: hintText,
+      isInvalid: isInvalid ?? scope?.isInvalid ?? false,
+      isDisabled: isDisabled ?? scope?.isDisabled ?? false,
+      obscureText: obscureText,
+      readOnly: readOnly,
+      autofocus: autofocus,
+      maxLines: maxLines,
+      minLines: minLines,
+      keyboardType: keyboardType,
+      textInputAction: textInputAction,
+      inputFormatters: inputFormatters,
+      onChanged: onChanged,
+      onSubmitted: onSubmitted,
+      onTap: onTap,
+      textCapitalization: textCapitalization,
+      autocorrect: autocorrect,
+      enableSuggestions: enableSuggestions,
+      prefix: prefix,
+      suffix: suffix,
     );
   }
 }

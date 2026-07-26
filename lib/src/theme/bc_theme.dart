@@ -1,56 +1,52 @@
 import 'package:bc_ui/src/theme/color_schemes.dart';
 import 'package:bc_ui/src/theme/dark_theme.dart';
 import 'package:bc_ui/src/theme/light_theme.dart';
+import 'package:bc_ui/src/theme/theme_extensions.dart';
 import 'package:flutter/material.dart';
 
 class BCThemeOverrides {
-  const BCThemeOverrides({this.primary, this.secondary, this.error});
+  const BCThemeOverrides({
+    this.accent,
+    this.fontFamily,
+    this.textTheme,
+  });
 
-  final Color? primary;
-  final Color? secondary;
-  final Color? error;
+  /// Overrides HeroUI's `accent` token. Accent-derived tokens (hover, soft,
+  /// soft-foreground, focus) are recomputed automatically.
+  final Color? accent;
+
+  /// Replaces the default bundled Inter family. Declare the font in your app's
+  /// `pubspec.yaml` when using a custom family.
+  final String? fontFamily;
+
+  /// Full typography override; takes precedence over [fontFamily].
+  final TextTheme? textTheme;
 }
 
 abstract final class BCTheme {
   static ThemeData light({BCThemeOverrides? overrides}) {
-    _assertBindingInitialized();
+    final ext = BCThemeExtension.light(accent: overrides?.accent);
+    final colorScheme = _colorScheme(BCColorSchemes.light, ext);
     return buildLightTheme(
-      colorScheme: _colorScheme(BCColorSchemes.light, overrides),
+      colorScheme: colorScheme,
+      extension: ext,
+      fontFamily: overrides?.fontFamily,
+      textTheme: overrides?.textTheme,
     );
   }
 
   static ThemeData dark({BCThemeOverrides? overrides}) {
-    _assertBindingInitialized();
+    final ext = BCThemeExtension.dark(accent: overrides?.accent);
+    final colorScheme = _colorScheme(BCColorSchemes.dark, ext);
     return buildDarkTheme(
-      colorScheme: _colorScheme(BCColorSchemes.dark, overrides),
+      colorScheme: colorScheme,
+      extension: ext,
+      fontFamily: overrides?.fontFamily,
+      textTheme: overrides?.textTheme,
     );
   }
 
-  static void _assertBindingInitialized() {
-    assert(() {
-      try {
-        WidgetsBinding.instance;
-        return true;
-      } on Object {
-        throw FlutterError(
-          'BCTheme must be built after Flutter binding is initialized.\n'
-          'Build theme inside a root widget\'s build() method, or call '
-          'WidgetsFlutterBinding.ensureInitialized() before BCTheme.light() '
-          'or BCTheme.dark().',
-        );
-      }
-    }());
-  }
-
-  static ColorScheme _colorScheme(
-    ColorScheme base,
-    BCThemeOverrides? overrides,
-  ) {
-    if (overrides == null) return base;
-    return base.copyWith(
-      primary: overrides.primary,
-      secondary: overrides.secondary,
-      error: overrides.error,
-    );
+  static ColorScheme _colorScheme(ColorScheme base, BCThemeExtension ext) {
+    return base.copyWith(primary: ext.accent, onPrimary: ext.accentForeground);
   }
 }

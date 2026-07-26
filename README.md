@@ -1,189 +1,211 @@
-# bc_ui
+<p align="center">
+  <img src="doc/assets/banner.png" alt="bc_ui — HeroUI Native, ported to Flutter" width="100%">
+</p>
 
-A Flutter design system with a cohesive theme, design tokens, and ready-to-use UI components built on Material 3.
+<p align="center">
+  <b>A Flutter design system that ports <a href="https://github.com/heroui-inc/heroui-native">heroui-native</a> 1:1</b><br>
+  Same tokens, same variants, same motion — on a Material 3 base, so the rest of the Material ecosystem keeps working.
+</p>
 
-## Features
+<p align="center">
+  <a href="doc/api.md"><b>API reference</b></a> ·
+  <a href="#components">Components</a> ·
+  <a href="#theming">Theming</a> ·
+  <a href="#example-app">Example app</a>
+</p>
 
-- **Theme system** — Light and dark `ThemeData` via `BCTheme`, with optional color overrides for `primary`, `secondary`, and `error`
-- **Typography** — Inter font via [google_fonts](https://pub.dev/packages/google_fonts), wired into Material `TextTheme`
-- **UI components** — Buttons, cards, text fields, badges, avatars, separators, loading indicators, and skeleton placeholders
-- **Context helpers** — `BCContext` extension for quick access to `theme`, `colors`, and `text`
-- **Example app** — Interactive showcase for every component under `example/`
+---
 
-## Getting started
+## Why
 
-Add `bc_ui` to your `pubspec.yaml`:
+- **One token system, 64 semantic color slots.** Every color is precomputed from
+  heroui-native's oklch sources — including each `color-mix` derived hover/soft
+  shade — into a light and a dark palette. No component hard-codes a color.
+- **iOS-grade surfaces.** Continuous ("squircle") corners via
+  `RoundedSuperellipseBorder`, layered surface/overlay shadows, and frosted
+  headers built on real `BackdropFilter` blur.
+- **The motion is ported, not approximated.** Press scale 0.985 with width
+  compensation, switch thumb spring (mass 2 / stiffness 1600 / damping 120),
+  tab indicator that tracks your finger, 1500ms shimmer — see `BCMotion`.
+- **Material stays available.** `BCTheme.light()` returns a `ThemeData`, so
+  `Scaffold`, `Navigator`, `showDialog` and every Material widget still work.
+- **Inter is bundled.** No font setup, no missing-glyph surprises.
+- **45+ components**, all light/dark aware, all documented in the
+  [API reference](doc/api.md).
+
+<table>
+  <tr>
+    <td align="center"><img src="doc/assets/demo-light.png" width="260" alt="Light theme"><br><sub><b>Light</b></sub></td>
+    <td align="center"><img src="doc/assets/demo-dark.png" width="260" alt="Dark theme"><br><sub><b>Dark</b></sub></td>
+  </tr>
+</table>
+
+<sub>The screen above is assembled entirely from bc_ui — header, card, buttons,
+tabs, list group, chips, bottom nav. Its source is
+<a href="example/lib/showcase/screens/demo_app_screen.dart"><code>example/lib/showcase/screens/demo_app_screen.dart</code></a>.</sub>
+
+## Install
 
 ```yaml
 dependencies:
-  bc_ui: ^0.0.1
+  bc_ui:
+    path: ../bc_ui # or a git / hosted reference
 ```
 
-Then run:
+Requires Dart SDK `^3.12.1`. No other runtime dependencies.
 
-```bash
-flutter pub get
-```
-
-### Requirements
-
-- Dart SDK `^3.12.1`
-- Flutter `>=1.17.0`
-
-## Usage
-
-### Apply the theme
-
-Build the theme inside a root widget's `build()` method (or call `WidgetsFlutterBinding.ensureInitialized()` first). `BCTheme` uses Google Fonts and requires the Flutter binding to be initialized.
+## Setup
 
 ```dart
 import 'package:bc_ui/bc_ui.dart';
-import 'package:flutter/material.dart';
 
-void main() {
-  runApp(const MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      theme: BCTheme.light(
-        overrides: const BCThemeOverrides(
-          primary: Color(0xFF0F766E),
-          secondary: Color(0xFF7C3AED),
-        ),
-      ),
-      darkTheme: BCTheme.dark(),
-      home: const HomeScreen(),
-    );
-  }
-}
+MaterialApp(
+  theme: BCTheme.light(),
+  darkTheme: BCTheme.dark(),
+  themeMode: ThemeMode.system,
+  // Only needed if you use BCToast:
+  builder: (context, child) => BCToastProvider(child: child!),
+  home: const HomeScreen(),
+);
 ```
 
-### Buttons
+That's the whole setup — every component reads its colors from the
+`BCThemeExtension` those two factories install.
+
+## Quick start
 
 ```dart
-BCButton.primary(
-  text: 'Continue',
+// Buttons: 7 variants x 3 sizes
+BCButton(
+  variant: BCButtonVariant.secondary,
   onPressed: () {},
-  fullWidth: true,
-)
+  startContent: const Icon(Icons.add, size: 18),
+  child: const Text('Add item'),
+);
 
-BCButton.outline(
-  text: 'Cancel',
-  onPressed: () {},
-  size: BCButtonSize.small,
-)
-
-BCButton.destructive(
-  text: 'Delete',
-  onPressed: () {},
-  loading: true,
-)
-```
-
-Variants: `primary`, `secondary`, `outline`, `text`, `destructive`  
-Sizes: `small`, `medium`, `large`
-
-### Cards
-
-```dart
-BCCard(
-  child: Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      BCCardHeader(child: Text('Title')),
-      BCCardBody(child: Text('Card content goes here.')),
-      BCCardFooter(
-        child: BCButton.primary(text: 'Action', onPressed: () {}),
-      ),
+// A frosted app header — pair with extendBodyBehindAppBar so there is
+// something to blur. The hairline appears only once content scrolls under.
+Scaffold(
+  extendBodyBehindAppBar: true,
+  appBar: BCAppHeader(
+    title: const Text('Inbox'),
+    subtitle: const Text('12 unread'),
+    actions: [
+      BCHeaderIconButton(icon: const Icon(Icons.search), onPressed: () {}),
     ],
   ),
-)
-```
+  body: ListView(children: const []),
+);
 
-### Text fields
+// Swipeable tabs: the bar and the panels share one controller, so a drag
+// switches tabs and carries the indicator with it.
+final tabs = BCTabsController<String>(values: const ['music', 'podcasts']);
 
-`BCTextField` uses a compound API — compose labels, inputs, descriptions, and errors as children.
+Column(
+  children: [
+    BCTabs(items: items, controller: tabs, fullWidth: true),
+    Expanded(
+      child: BCTabView(
+        controller: tabs,
+        children: const [MusicPanel(), PodcastsPanel()],
+      ),
+    ),
+  ],
+);
 
-```dart
+// Compound form field with built-in validation states
 BCTextField(
   isRequired: true,
-  isInvalid: hasError,
   children: [
-    BCTextFieldLabel('Email'),
-    BCTextFieldInput(
-      hintText: 'you@example.com',
-      variant: BCTextFieldVariant.primary,
-    ),
-    if (hasError)
-      BCTextFieldError('Please enter a valid email address'),
+    const BCTextFieldLabel('Email'),
+    const BCTextFieldInput(hintText: 'you@example.com'),
+    const BCTextFieldDescription("We'll never share your email."),
   ],
-)
-```
+);
 
-### Other components
-
-```dart
-// Badge
-BCBadge(label: 'New', variant: BCBadgeVariant.primary)
-
-// Avatar
-BCAvatar.withInitials('JD', size: BCAvatarSize.large)
-
-// Separator
-const BCSeparator(margin: EdgeInsets.symmetric(vertical: 16))
-
-// Loading
-const BCLoading(isLoading: true)
-
-// Skeleton placeholder
-BCSkeleton(
-  isLoading: isLoading,
-  width: 200,
-  height: 20,
-  child: Text(title),
-)
-```
-
-### Context extension
-
-```dart
-Widget build(BuildContext context) {
-  final colors = context.colors;
-  final textTheme = context.text;
-
-  return Text('Hello', style: textTheme.titleLarge);
-}
+// Toast
+BCToast.show(context, const BCToastData(
+  title: 'Changes saved',
+  variant: BCToastVariant.success,
+));
 ```
 
 ## Components
 
-| Component | Description |
-|-----------|-------------|
-| `BCButton` | Primary, secondary, outline, text, and destructive variants with sizes and loading state |
-| `BCCard` | Surface container with header, body, and footer slots |
-| `BCTextField` | Compound input with label, description, error, and variant support |
-| `BCBadge` | Labels and chips with size, variant, and color options |
-| `BCAvatar` | Image, initials, or icon with fallback and status handling |
-| `BCSeparator` | Horizontal or vertical dividers with thickness variants |
-| `BCLoading` | Spinner with size and color options |
-| `BCSkeleton` | Shimmer and pulse loading placeholders |
+Full props, defaults and enums for every entry: **[API reference](doc/api.md)**.
 
-## Example
+| Category | Components |
+|---|---|
+| **Navigation** | [`BCAppHeader`](doc/api.md#bcappheader) · [`BCSliverAppHeader`](doc/api.md#bcsliverappheader) · [`BCHeaderIconButton`](doc/api.md#bcheadericonbutton) · [`BCBottomNav`](doc/api.md#bcbottomnav) · [`BCTabs`](doc/api.md#bctabs) · [`BCTabView`](doc/api.md#bctabview) |
+| **Actions** | [`BCButton`](doc/api.md#bcbutton) · [`BCLinkButton`](doc/api.md#bclinkbutton) · [`BCCloseButton`](doc/api.md#bcclosebutton) · [`BCFab`](doc/api.md#bcfab) · [`BCSpeedDial`](doc/api.md#bcspeeddial) · [`BCToggleButton`](doc/api.md#bctogglebutton) · [`BCToggleButtonGroup`](doc/api.md#bctogglebuttongroup) · [`BCPressable`](doc/api.md#bcpressable) |
+| **Containers** | [`BCSurface`](doc/api.md#bcsurface) · [`BCCard`](doc/api.md#bccard) · [`BCListGroup`](doc/api.md#bclistgroup) · [`BCFlipCard`](doc/api.md#bcflipcard) · [`BCScrollShadow`](doc/api.md#bcscrollshadow) |
+| **Data display** | [`BCText`](doc/api.md#bctext) · [`BCAvatar`](doc/api.md#bcavatar) · [`BCChip`](doc/api.md#bcchip) · [`BCTagGroup`](doc/api.md#bctaggroup) · [`BCSeparator`](doc/api.md#bcseparator) · [`BCSkeleton`](doc/api.md#bcskeleton) · [`BCSpinner`](doc/api.md#bcspinner) · [`BCRating`](doc/api.md#bcrating) · [`BCEmptyState`](doc/api.md#bcemptystate) |
+| **Forms** | [`BCInput`](doc/api.md#bcinput) · [`BCTextField`](doc/api.md#bctextfield) · [`BCTextArea`](doc/api.md#bctextarea) · [`BCPasswordInput`](doc/api.md#bcpasswordinput) · [`BCSearchField`](doc/api.md#bcsearchfield) · [`BCInputOTP`](doc/api.md#bcinputotp) · [`BCDateField`](doc/api.md#bcdatefield) · [`BCTimeField`](doc/api.md#bctimefield) · [`BCSelect`](doc/api.md#bcselect) · [`BCControlField`](doc/api.md#bccontrolfield) |
+| **Selection** | [`BCCheckbox`](doc/api.md#bccheckbox) · [`BCRadioGroup`](doc/api.md#bcradiogroup) · [`BCSwitch`](doc/api.md#bcswitch) · [`BCSlider`](doc/api.md#bcslider) |
+| **Overlays** | [`BCDialog`](doc/api.md#bcdialog) · [`BCPopover`](doc/api.md#bcpopover) · [`BCMenu`](doc/api.md#bcmenu) · [`BCToast`](doc/api.md#bctoast) |
+| **Layouts** | [`BCAuthBackground`](doc/api.md#bcauthbackground) |
 
-Run the included showcase app to preview all components:
+Naming is predictable across the library: `variant` picks the look, `size`
+picks the metrics, state is controlled (`value` + `onValueChange`), and
+disabled/invalid are always `isDisabled` / `isInvalid`.
 
-```bash
-cd example
-flutter run
+## Theming
+
+### Custom accent
+
+```dart
+BCTheme.light(
+  overrides: BCThemeOverrides(accent: const Color(0xFF0F766E)),
+);
 ```
 
-## Additional information
+Accent-derived tokens (hover, soft, soft-foreground, focus) are recomputed for
+you, so a single color change stays consistent everywhere.
 
-This package is in early development (`0.0.1`). APIs may change between releases.
+### Reading tokens in your own widgets
 
-For issues, feature requests, or contributions, use the repository issue tracker.
+```dart
+final bc = context.bcTheme;
+
+DecoratedBox(
+  decoration: ShapeDecoration(
+    color: bc.accentSoft,
+    shape: BCShapes.continuous(BCRadius.xxl),
+    shadows: bc.surfaceShadow.shadows,
+  ),
+);
+```
+
+### Design tokens
+
+`BCColorsLight`/`BCColorsDark` (raw palettes) · `BCRadius` (2→32, `field` 14) ·
+`BCSpacing` (4px unit) · `BCTypography` (tailwind text scale) · `BCShadows`
+(layered surface/overlay shadows) · `BCMotion` (springs and timings) ·
+`BCShapes` (continuous corners) · `BCSizes` · `BCDuration` · `BCBreakpoints`.
+
+See [Theme and tokens](doc/api.md#theme-and-tokens) for the full list.
+
+## Example app
+
+`example/` mirrors heroui-native's demo: a full demo screen plus one page per
+component, each with vertically paged usage variants and a pagination rail.
+
+```bash
+cd example && flutter run
+```
+
+## Documentation
+
+- **[API reference](doc/api.md)** — every component, prop, default and enum.
+  The prop tables are generated from the source, so they track the code.
+- `dart doc` generates the full dartdoc site from the inline documentation.
+
+## Tests
+
+```bash
+flutter test
+```
+
+## License
+
+The `LICENSE` file is still a placeholder — pick a license before publishing.

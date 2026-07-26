@@ -43,7 +43,6 @@ class _BCAvatarState extends State<BCAvatar> {
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.colors;
     final diameter = BCAvatarTheme.diameter(widget.size);
 
     return _BCAvatarScope(
@@ -52,19 +51,16 @@ class _BCAvatarState extends State<BCAvatar> {
       color: widget.color,
       status: _status,
       onStatusChanged: _onStatusChanged,
-      child: ClipOval(
-        child: SizedBox(
-          width: diameter,
-          height: diameter,
-          child: DecoratedBox(
-            decoration: BCAvatarTheme.decoration(
-              variant: widget.variant,
-              color: widget.color,
-              colors: colors,
-            ),
-            child: Stack(fit: StackFit.expand, children: widget.children),
-          ),
+      child: Container(
+        width: diameter,
+        height: diameter,
+        clipBehavior: Clip.antiAlias,
+        decoration: BCAvatarTheme.decoration(
+          variant: widget.variant,
+          color: widget.color,
+          bc: context.bcTheme,
         ),
+        child: Stack(fit: StackFit.expand, children: widget.children),
       ),
     );
   }
@@ -231,10 +227,9 @@ class _BCAvatarFallbackState extends State<BCAvatarFallback> {
       return const SizedBox.shrink();
     }
 
-    final colors = context.colors;
     final foreground = BCAvatarTheme.foregroundColor(
       color: scope.color,
-      colors: colors,
+      bc: context.bcTheme,
     );
 
     if (widget.child != null) {
@@ -245,11 +240,7 @@ class _BCAvatarFallbackState extends State<BCAvatarFallback> {
       return Center(
         child: Text(
           widget.initials!,
-          style: BCAvatarTheme.fallbackTextStyle(
-            scope.size,
-            context.text,
-            foreground,
-          ),
+          style: BCAvatarTheme.fallbackTextStyle(scope.size, foreground),
         ),
       );
     }

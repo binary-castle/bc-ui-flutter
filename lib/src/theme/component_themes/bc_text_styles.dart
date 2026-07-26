@@ -1,115 +1,116 @@
 import 'package:bc_ui/src/tokens/bc_typography.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 abstract final class BCTextStyles {
-  // Inter via google_fonts — call only after Flutter binding is initialized
-  // (e.g. inside a root widget's build(), not in main() before runApp).
-  static TextStyle Function({
-    required FontWeight fontWeight,
-    required double fontSize,
-    required Color color,
-  })
-  get _font =>
-      ({required fontWeight, required fontSize, required color}) =>
-          GoogleFonts.inter(
-            fontWeight: fontWeight,
-            fontSize: fontSize,
-            color: color,
-          );
+  static TextTheme build(
+    ColorScheme colors, {
+    String? fontFamily,
+  }) {
+    final family = fontFamily ?? BCTypography.fontFamily;
 
-  static TextTheme build(ColorScheme colors) {
+    TextStyle style({
+      required FontWeight fontWeight,
+      required double fontSize,
+      required Color color,
+    }) =>
+        TextStyle(
+          fontFamily: family,
+          fontWeight: fontWeight,
+          fontSize: fontSize,
+          color: color,
+        );
+
     return TextTheme(
       // Display
-      displayLarge: _font(
+      displayLarge: style(
         fontWeight: BCTypography.bold,
         fontSize: 57,
         color: colors.onSurface,
       ),
 
-      displayMedium: _font(
+      displayMedium: style(
         fontWeight: BCTypography.bold,
         fontSize: 45,
         color: colors.onSurface,
       ),
 
-      displaySmall: _font(
+      displaySmall: style(
         fontWeight: BCTypography.bold,
         fontSize: 36,
         color: colors.onSurface,
       ),
 
       // Headlines
-      headlineLarge: _font(
+      headlineLarge: style(
         fontWeight: BCTypography.bold,
         fontSize: 32,
         color: colors.onSurface,
       ),
 
-      headlineMedium: _font(
+      headlineMedium: style(
         fontWeight: BCTypography.semiBold,
         fontSize: 28,
         color: colors.onSurface,
       ),
 
-      headlineSmall: _font(
+      headlineSmall: style(
         fontWeight: BCTypography.semiBold,
         fontSize: 24,
         color: colors.onSurface,
       ),
 
       // Titles
-      titleLarge: _font(
+      titleLarge: style(
         fontWeight: BCTypography.semiBold,
         fontSize: 22,
         color: colors.onSurface,
       ),
 
-      titleMedium: _font(
+      titleMedium: style(
         fontWeight: BCTypography.medium,
         fontSize: 16,
         color: colors.onSurface,
       ),
 
-      titleSmall: _font(
+      titleSmall: style(
         fontWeight: BCTypography.medium,
         fontSize: 14,
         color: colors.onSurface,
       ),
 
       // Body
-      bodyLarge: _font(
+      bodyLarge: style(
         fontWeight: BCTypography.regular,
         fontSize: 16,
         color: colors.onSurface,
       ),
 
-      bodyMedium: _font(
+      bodyMedium: style(
         fontWeight: BCTypography.regular,
         fontSize: 14,
         color: colors.onSurface,
       ),
 
-      bodySmall: _font(
+      bodySmall: style(
         fontWeight: BCTypography.regular,
         fontSize: 12,
         color: colors.onSurfaceVariant,
       ),
 
       // Labels
-      labelLarge: _font(
+      labelLarge: style(
         fontWeight: BCTypography.medium,
         fontSize: 14,
         color: colors.onSurface,
       ),
 
-      labelMedium: _font(
+      labelMedium: style(
         fontWeight: BCTypography.medium,
         fontSize: 12,
         color: colors.onSurface,
       ),
 
-      labelSmall: _font(
+      labelSmall: style(
         fontWeight: BCTypography.medium,
         fontSize: 11,
         color: colors.onSurfaceVariant,

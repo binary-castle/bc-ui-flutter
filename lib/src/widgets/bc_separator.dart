@@ -1,10 +1,13 @@
-import 'package:bc_ui/src/extensions/context_extension.dart';
-import 'package:bc_ui/src/theme/component_themes/separator_theme.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
-export 'package:bc_ui/src/theme/component_themes/separator_theme.dart'
-    show BCSeparatorOrientation, BCSeparatorVariant;
+import '../extensions/context_extension.dart';
 
+enum BCSeparatorVariant { thin, thick }
+
+enum BCSeparatorOrientation { horizontal, vertical }
+
+/// HeroUI Native Separator (separator.css): hairline (thin) or 6px (thick)
+/// line in the `separator` token color.
 class BCSeparator extends StatelessWidget {
   const BCSeparator({
     super.key,
@@ -23,24 +26,25 @@ class BCSeparator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final lineThickness = BCSeparatorTheme.thickness(
-      variant: variant,
-      context: context,
-      override: thickness,
-    );
-    final lineColor = color ?? BCSeparatorTheme.color(context.colors);
+    final lineThickness = thickness ??
+        switch (variant) {
+          BCSeparatorVariant.thin =>
+            1.0 / MediaQuery.devicePixelRatioOf(context),
+          BCSeparatorVariant.thick => 6.0,
+        };
+    final lineColor = color ?? context.bcTheme.separator;
 
     final line = switch (orientation) {
       BCSeparatorOrientation.horizontal => SizedBox(
-        width: double.infinity,
-        height: lineThickness,
-        child: ColoredBox(color: lineColor),
-      ),
+          width: double.infinity,
+          height: lineThickness,
+          child: ColoredBox(color: lineColor),
+        ),
       BCSeparatorOrientation.vertical => SizedBox(
-        width: lineThickness,
-        height: double.infinity,
-        child: ColoredBox(color: lineColor),
-      ),
+          width: lineThickness,
+          height: double.infinity,
+          child: ColoredBox(color: lineColor),
+        ),
     };
 
     if (margin == null) return line;

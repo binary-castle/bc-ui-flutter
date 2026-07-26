@@ -1,42 +1,36 @@
-import 'package:bc_ui/src/extensions/context_extension.dart';
-import 'package:bc_ui/src/theme/component_themes/card_theme.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
-export 'package:bc_ui/src/theme/component_themes/card_theme.dart'
-    show BCCardVariant;
+import '../extensions/context_extension.dart';
+import '../tokens/bc_typography.dart';
+import 'bc_surface.dart';
 
+enum BCCardVariant { defaultVariant, secondary, tertiary, transparent }
+
+/// HeroUI Native Card: a [BCSurface] with Header/Body/Footer/Title/Description
+/// slots (card.tsx renders Root directly onto Surface).
 class BCCard extends StatelessWidget {
   const BCCard({
     super.key,
     required this.child,
     this.variant = BCCardVariant.defaultVariant,
+    this.padding,
   });
 
   final Widget child;
   final BCCardVariant variant;
+  final EdgeInsetsGeometry? padding;
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.colors;
-    final showShadow = variant != BCCardVariant.transparent;
-
-    final card = ClipRRect(
-      borderRadius: BCCardTheme.borderRadius,
-      clipBehavior: Clip.antiAlias,
-      child: DecoratedBox(
-        decoration: BCCardTheme.fillDecoration(
-          variant: variant,
-          colors: colors,
-        ),
-        child: Padding(padding: BCCardTheme.padding, child: child),
-      ),
-    );
-
-    if (!showShadow) return card;
-
-    return DecoratedBox(
-      decoration: BCCardTheme.shadowDecoration(colors),
-      child: card,
+    return BCSurface(
+      variant: switch (variant) {
+        BCCardVariant.defaultVariant => BCSurfaceVariant.defaultVariant,
+        BCCardVariant.secondary => BCSurfaceVariant.secondary,
+        BCCardVariant.tertiary => BCSurfaceVariant.tertiary,
+        BCCardVariant.transparent => BCSurfaceVariant.transparent,
+      },
+      padding: padding,
+      child: child,
     );
   }
 }
@@ -68,6 +62,7 @@ class BCCardFooter extends StatelessWidget {
   Widget build(BuildContext context) => child;
 }
 
+/// Card title: text-lg, medium weight, foreground (card.css `card__label`).
 class BCCardTitle extends StatelessWidget {
   const BCCardTitle(this.text, {super.key});
 
@@ -77,11 +72,15 @@ class BCCardTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: BCCardTheme.titleStyle(context.text, context.colors),
+      style: BCTypography.textLg.copyWith(
+        color: context.bcTheme.foreground,
+        fontWeight: BCTypography.medium,
+      ),
     );
   }
 }
 
+/// Card description: text-base, muted (card.css `card__description`).
 class BCCardDescription extends StatelessWidget {
   const BCCardDescription(this.text, {super.key});
 
@@ -91,7 +90,7 @@ class BCCardDescription extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: BCCardTheme.descriptionStyle(context.text, context.colors),
+      style: BCTypography.textBase.copyWith(color: context.bcTheme.muted),
     );
   }
 }

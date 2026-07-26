@@ -62,8 +62,10 @@ abstract final class BCSkeletonTheme {
   static BorderRadius get defaultBorderRadius =>
       BorderRadius.circular(BCRadius.md);
 
+  /// heroui skeleton.css: `color-mix(in oklab, var(--color-muted) 30%,
+  /// transparent)`. `onSurfaceVariant` maps to the muted token.
   static Color backgroundColor(ColorScheme colors) {
-    return colors.surfaceContainerHighest.withValues(alpha: 0.3);
+    return colors.onSurfaceVariant.withValues(alpha: 0.3);
   }
 
   static Color shimmerHighlightColor(ColorScheme colors, {Color? override}) {

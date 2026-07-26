@@ -11,6 +11,56 @@ export 'package:bc_ui/src/theme/component_themes/skeleton_theme.dart'
         BCSkeletonShimmerAnimation,
         BCSkeletonVariant;
 
+/// HeroUI Native SkeletonGroup: cascades `isLoading`, `variant`, and
+/// `animation` to descendant [BCSkeleton]s via an inherited scope
+/// (skeleton-group.tsx passes the same values through context).
+class BCSkeletonGroup extends StatelessWidget {
+  const BCSkeletonGroup({
+    super.key,
+    required this.isLoading,
+    this.variant = BCSkeletonVariant.shimmer,
+    this.animation,
+    required this.child,
+  });
+
+  final bool isLoading;
+  final BCSkeletonVariant variant;
+  final BCSkeletonAnimation? animation;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return _BCSkeletonGroupScope(
+      isLoading: isLoading,
+      variant: variant,
+      animation: animation,
+      child: child,
+    );
+  }
+}
+
+class _BCSkeletonGroupScope extends InheritedWidget {
+  const _BCSkeletonGroupScope({
+    required this.isLoading,
+    required this.variant,
+    required this.animation,
+    required super.child,
+  });
+
+  final bool isLoading;
+  final BCSkeletonVariant variant;
+  final BCSkeletonAnimation? animation;
+
+  static _BCSkeletonGroupScope? maybeOf(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<_BCSkeletonGroupScope>();
+
+  @override
+  bool updateShouldNotify(_BCSkeletonGroupScope oldWidget) =>
+      isLoading != oldWidget.isLoading ||
+      variant != oldWidget.variant ||
+      animation != oldWidget.animation;
+}
+
 class BCSkeleton extends StatefulWidget {
   const BCSkeleton({
     super.key,
@@ -42,7 +92,21 @@ class BCSkeleton extends StatefulWidget {
 class _BCSkeletonState extends State<BCSkeleton>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
-  var _dependenciesReady = false;
+  _BCSkeletonGroupScope? _group;
+
+  /// Group values cascade to items; an item's own non-default props win
+  /// for variant/animation, while the group drives isLoading.
+  bool get _isLoading => _group?.isLoading ?? widget.isLoading;
+
+  BCSkeletonVariant get _variant {
+    if (_group == null) return widget.variant;
+    return widget.variant != BCSkeletonVariant.shimmer
+        ? widget.variant
+        : _group!.variant;
+  }
+
+  BCSkeletonAnimation? get _animation =>
+      widget.animation ?? _group?.animation;
 
   @override
   void initState() {
@@ -53,10 +117,8 @@ class _BCSkeletonState extends State<BCSkeleton>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (!_dependenciesReady) {
-      _dependenciesReady = true;
-      _syncAnimation();
-    }
+    _group = _BCSkeletonGroupScope.maybeOf(context);
+    _syncAnimation();
   }
 
   @override
@@ -78,8 +140,8 @@ class _BCSkeletonState extends State<BCSkeleton>
 
   bool get _isAnimationDisabled {
     return BCSkeletonTheme.isAnimationDisabled(
-      animation: widget.animation,
-      variant: widget.variant,
+      animation: _animation,
+      variant: _variant,
       isAnimatedStyleActive: widget.isAnimatedStyleActive,
       disableAnimations: MediaQuery.disableAnimationsOf(context),
     );
@@ -89,17 +151,17 @@ class _BCSkeletonState extends State<BCSkeleton>
     _controller.stop();
     _controller.reset();
 
-    if (!widget.isLoading || _isAnimationDisabled) return;
+    if (!_isLoading || _isAnimationDisabled) return;
 
-    switch (widget.variant) {
+    switch (_variant) {
       case BCSkeletonVariant.shimmer:
         _controller.duration = BCSkeletonTheme.resolveShimmerDuration(
-          widget.animation,
+          _animation,
         );
         _controller.repeat();
       case BCSkeletonVariant.pulse:
         _controller.duration = BCSkeletonTheme.resolvePulseDuration(
-          widget.animation,
+          _animation,
         );
         _controller.repeat(reverse: true);
       case BCSkeletonVariant.none:
@@ -122,7 +184,7 @@ class _BCSkeletonState extends State<BCSkeleton>
     final baseColor = _baseColor(colors);
     final highlightColor = BCSkeletonTheme.shimmerHighlightColor(
       colors,
-      override: widget.animation?.shimmer?.highlightColor,
+      override: _animation?.shimmer?.highlightColor,
     );
     final screenWidth = MediaQuery.sizeOf(context).width;
 
@@ -134,17 +196,17 @@ class _BCSkeletonState extends State<BCSkeleton>
             baseColor: baseColor,
             highlightColor: highlightColor,
             borderRadius: borderRadius,
-            variant: widget.variant,
+            variant: _variant,
             progress: _controller,
             shimmerCurve: BCSkeletonTheme.resolveShimmerCurve(
-              widget.animation,
+              _animation,
             ),
-            pulseCurve: BCSkeletonTheme.resolvePulseCurve(widget.animation),
+            pulseCurve: BCSkeletonTheme.resolvePulseCurve(_animation),
             pulseMinOpacity: BCSkeletonTheme.resolvePulseMinOpacity(
-              widget.animation,
+              _animation,
             ),
             pulseMaxOpacity: BCSkeletonTheme.resolvePulseMaxOpacity(
-              widget.animation,
+              _animation,
             ),
             screenWidth: screenWidth,
             textDirection: Directionality.of(context),
@@ -159,10 +221,10 @@ class _BCSkeletonState extends State<BCSkeleton>
   @override
   Widget build(BuildContext context) {
     final enteringDuration = BCSkeletonTheme.resolveEnteringDuration(
-      widget.animation,
+      _animation,
     );
     final exitingDuration = BCSkeletonTheme.resolveExitingDuration(
-      widget.animation,
+      _animation,
     );
 
     return AnimatedSwitcher(
@@ -173,9 +235,9 @@ class _BCSkeletonState extends State<BCSkeleton>
       transitionBuilder: (child, animation) {
         return FadeTransition(opacity: animation, child: child);
       },
-      child: widget.isLoading
+      child: _isLoading
           ? SizedBox(
-              key: ValueKey('skeleton-${widget.variant.name}'),
+              key: ValueKey('skeleton-${_variant.name}'),
               width: widget.width,
               height: widget.height,
               child: _buildSkeleton(context.colors),
