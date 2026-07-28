@@ -16,7 +16,7 @@ source, so they track the code.
 - [Navigation](#navigation) — `BCAppHeader`, `BCSliverAppHeader`, `BCHeaderIconButton`, `BCBottomNav`, `BCNavRail`, `BCNavDrawer`, `BCToolbar`, `BCTabs`, `BCTabView`
 - [Actions](#actions) — `BCButton`, `BCSocialAuthButton`, `BCBrandLogo`, `BCLinkButton`, `BCCloseButton`, `BCFab`, `BCSpeedDial`, `BCToggleButton`, `BCToggleButtonGroup`, `BCPressable`
 - [Containers](#containers) — `BCSurface`, `BCCard`, `BCListGroup`, `BCFlipCard`, `BCScrollShadow`
-- [Data display](#data-display) — `BCText`, `BCAvatar`, `BCChip`, `BCTagGroup`, `BCSeparator`, `BCSkeleton`, `BCSpinner`, `BCProgress`, `BCLoadingOverlay`, `BCRating`, `BCEmptyState`
+- [Data display](#data-display) — `BCText`, `BCAvatar`, `BCChip`, `BCRibbon`, `BCTagGroup`, `BCSeparator`, `BCSkeleton`, `BCSpinner`, `BCProgress`, `BCLoadingOverlay`, `BCRating`, `BCEmptyState`
 - [Forms](#forms) — `BCInput`, `BCTextField`, `BCTextArea`, `BCPasswordInput`, `BCSearchField`, `BCInputOTP`, `BCDateField`, `BCTimeField`, `BCDateTimePicker`, `BCDateTimeWheel`, `BCCalendar`, `BCTimeWheel`, `BCSelect`, `BCControlField`
 - [Selection](#selection) — `BCCheckbox`, `BCRadioGroup`, `BCSwitch`, `BCSlider`, `BCRangeSlider`
 - [Overlays](#overlays) — `BCDialog`, `BCPopover`, `BCMenu`, `BCToast`
@@ -1098,6 +1098,64 @@ BCChip(
 **`BCChipSize`** — `sm`, `md`, `lg`
 
 **`BCChipColor`** — `accent`, `defaultColor`, `success`, `warning`, `danger`
+
+### BCRibbon
+
+Merchandising ribbon for product cards — 'Hot Sale', 'Nearby', '-30%'. Five forms — pill tag, edge flag, corner sash, full-width banner, bookmark — laid over a card and clipped to its corners where the form needs it. The corner band sizes itself to its label and takes `cornerOffset`/`cornerThickness`, so it runs from a thin floating stripe to a filled corner (`cornerOffset: 0`). The overlay never takes pointer events, so the card stays tappable.
+
+```dart
+// Wraps the card it decorates.
+BCRibbon.label(
+  'Hot Sale',
+  form: BCRibbonForm.corner,
+  cornerOffset: 0,                    // 0 fills the corner; larger floats the band inward
+  position: BCRibbonPosition.topEnd,
+  color: BCRibbonColor.danger,
+  child: ProductCard(),
+);
+
+// Ribbons nest, so a card can carry more than one.
+BCRibbon.label(
+  'Best deal',
+  form: BCRibbonForm.corner,
+  position: BCRibbonPosition.topEnd,
+  child: BCRibbon(
+    label: const Text('Nearby'),
+    variant: BCRibbonVariant.outline,
+    color: BCRibbonColor.success,
+    startContent: const Icon(Icons.near_me),
+    child: ProductCard(),
+  ),
+);
+
+// Standalone, for a Stack you already have.
+const BCRibbon(label: Text('-30%'), form: BCRibbonForm.bookmark);
+```
+
+| Prop | Type | Default | Notes |
+|---|---|---|---|
+| `label` | `Widget` | required |  |
+| `form` | `BCRibbonForm` | `BCRibbonForm.tag` |  |
+| `variant` | `BCRibbonVariant` | `BCRibbonVariant.solid` |  |
+| `color` | `BCRibbonColor` | `BCRibbonColor.accent` |  |
+| `size` | `BCRibbonSize` | `BCRibbonSize.md` |  |
+| `position` | `BCRibbonPosition` | `BCRibbonPosition.topStart` |  |
+| `startContent` | `Widget?` | — | Small leading icon, tinted to match the label. |
+| `inset` | `double?` | — | Distance from the card edges. Defaults to 8/10/12 by `size`, and is ignored by `BCRibbonForm.corner` and `BCRibbonForm.banner`, which sit flush against the edges. |
+| `cornerOffset` | `double?` | — | `BCRibbonForm.corner` only: gap between the card's corner and the near edge of the band.  Defaults to whatever keeps the band clear of the corner while still long enough for the label. Pass `0` to fill the corner completely, or a larger value to float the band further down the card. |
+| `cornerThickness` | `double?` | — | `BCRibbonForm.corner` only: thickness of the band.  Defaults to the label's height plus padding — and, when `cornerOffset` pulls the band toward the corner where there is less room, to whatever the label needs to fit. |
+| `borderRadius` | `double?` | — | Corner radius the ribbon is clipped to, i.e. the radius of the card it covers. Defaults to `BCRadius.xxxl` (24), matching `BCSurface`. |
+| `child` | `Widget?` | — | The card the ribbon is laid over. Without one the ribbon sizes itself. |
+
+**`BCRibbonForm`** — `tag`, `flag`, `corner`, `banner`, `bookmark`
+
+**`BCRibbonVariant`** — `solid`, `soft`, `outline`
+
+**`BCRibbonColor`** — `accent`, `defaultColor`, `success`, `warning`, `danger`
+
+**`BCRibbonSize`** — `sm`, `md`, `lg`
+
+**`BCRibbonPosition`** — `topStart`, `topEnd`, `bottomStart`, `bottomEnd`
 
 ### BCTagGroup
 
