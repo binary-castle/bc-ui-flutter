@@ -153,7 +153,7 @@ CATALOG = [
         'BCSurface', 'BCCard', 'BCListGroup', 'BCFlipCard', 'BCScrollShadow',
     ]),
     ('Data display', [
-        'BCText', 'BCAvatar', 'BCChip', 'BCTagGroup', 'BCSeparator',
+        'BCText', 'BCAvatar', 'BCChip', 'BCRibbon', 'BCTagGroup', 'BCSeparator',
         'BCSkeleton', 'BCSpinner', 'BCProgress', 'BCLoadingOverlay',
         'BCRating', 'BCEmptyState',
     ]),
@@ -201,6 +201,7 @@ SUMMARY = {
     'BCText': 'Typography primitive with the heroui type scale.',
     'BCAvatar': 'Composable avatar: image with a fallback that shows initials while loading or on error.',
     'BCChip': 'Compact pill for status, filters and metadata.',
+    'BCRibbon': "Merchandising ribbon for product cards — 'Hot Sale', 'Nearby', '-30%'. Five forms — pill tag, edge flag, corner sash, full-width banner, bookmark — laid over a card and clipped to its corners where the form needs it. The corner band sizes itself to its label and takes `cornerOffset`/`cornerThickness`, so it runs from a thin floating stripe to a filled corner (`cornerOffset: 0`). The overlay never takes pointer events, so the card stays tappable.",
     'BCTagGroup': 'Wrapping list of selectable/removable tags.',
     'BCSeparator': 'Horizontal or vertical rule.',
     'BCSkeleton': 'Loading placeholder with shimmer or pulse.',
@@ -439,6 +440,32 @@ BCBrandLogo(
   provider: BCSocialProvider.slack,
   color: context.bcTheme.foreground,
 );''',
+    'BCRibbon': '''// Wraps the card it decorates.
+BCRibbon.label(
+  'Hot Sale',
+  form: BCRibbonForm.corner,
+  cornerOffset: 0,                    // 0 fills the corner; larger floats the band inward
+  position: BCRibbonPosition.topEnd,
+  color: BCRibbonColor.danger,
+  child: ProductCard(),
+);
+
+// Ribbons nest, so a card can carry more than one.
+BCRibbon.label(
+  'Best deal',
+  form: BCRibbonForm.corner,
+  position: BCRibbonPosition.topEnd,
+  child: BCRibbon(
+    label: const Text('Nearby'),
+    variant: BCRibbonVariant.outline,
+    color: BCRibbonColor.success,
+    startContent: const Icon(Icons.near_me),
+    child: ProductCard(),
+  ),
+);
+
+// Standalone, for a Stack you already have.
+const BCRibbon(label: Text('-30%'), form: BCRibbonForm.bookmark);''',
     'BCSpeedDial': '''BCSpeedDial(
   items: [
     BCSpeedDialItem(label: 'New note', icon: const Icon(Icons.note_add), onPressed: () {}),

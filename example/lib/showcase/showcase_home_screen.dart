@@ -26,6 +26,7 @@ import 'package:example/showcase/screens/progress_showcase_screen.dart';
 import 'package:example/showcase/screens/radio_group_showcase_screen.dart';
 import 'package:example/showcase/screens/range_slider_showcase_screen.dart';
 import 'package:example/showcase/screens/rating_showcase_screen.dart';
+import 'package:example/showcase/screens/ribbon_showcase_screen.dart';
 import 'package:example/showcase/screens/scroll_shadow_showcase_screen.dart';
 import 'package:example/showcase/screens/search_field_showcase_screen.dart';
 import 'package:example/showcase/screens/select_showcase_screen.dart';
@@ -92,6 +93,7 @@ final List<ComponentEntry> componentRegistry = [
   ComponentEntry('RadioGroup', (_) => const RadioGroupShowcaseScreen()),
   ComponentEntry('RangeSlider', (_) => const RangeSliderShowcaseScreen()),
   ComponentEntry('Rating', (_) => const RatingShowcaseScreen()),
+  ComponentEntry('Ribbon', (_) => const RibbonShowcaseScreen()),
   ComponentEntry('ScrollShadow', (_) => const ScrollShadowShowcaseScreen()),
   ComponentEntry('SearchField', (_) => const SearchFieldShowcaseScreen()),
   ComponentEntry('Select', (_) => const SelectShowcaseScreen()),

@@ -31,6 +31,7 @@ export 'bc_progress.dart';
 export 'bc_radio.dart';
 export 'bc_range_slider.dart';
 export 'bc_rating.dart';
+export 'bc_ribbon.dart';
 export 'bc_scroll_shadow.dart';
 export 'bc_search_field.dart';
 export 'bc_select.dart';
