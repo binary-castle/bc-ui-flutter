@@ -120,7 +120,9 @@ def extract(root='lib/src'):
                 if name.startswith('_'):
                     continue
                 if kind == 'enum':
-                    head = re.sub(r'///[^\n]*|//[^\n]*', '', body.strip('{}').split(';')[0])
+                    # Strip comments first: a ';' inside a doc comment must
+                    # not look like the end of the value list.
+                    head = re.sub(r'///[^\n]*|//[^\n]*', '', body.strip('{}')).split(';')[0]
                     values = []
                     for part in split_args(head):
                         m2 = re.match(r'\s*(\w+)', part)
@@ -143,7 +145,8 @@ CATALOG = [
         'BCTabs', 'BCTabView',
     ]),
     ('Actions', [
-        'BCButton', 'BCLinkButton', 'BCCloseButton', 'BCFab', 'BCSpeedDial',
+        'BCButton', 'BCSocialAuthButton', 'BCBrandLogo', 'BCLinkButton',
+        'BCCloseButton', 'BCFab', 'BCSpeedDial',
         'BCToggleButton', 'BCToggleButtonGroup', 'BCPressable',
     ]),
     ('Containers', [
@@ -181,6 +184,8 @@ SUMMARY = {
     'BCTabs': 'Segmented control. Drive it with `value` + `onValueChange`, or hand it a `BCTabsController` to pair it with a swipeable `BCTabView`.',
     'BCTabView': 'The swipeable panels behind a `BCTabs` bar. Sharing a controller means a drag switches tabs and carries the indicator with it.',
     'BCButton': 'The primary action component: 7 variants x 3 sizes, optional leading/trailing content, icon-only and full-width modes.',
+    'BCSocialAuthButton': 'Sign-in button for an identity provider — a `BCButton` with the provider\'s brand mark as start content, so it lines up with every other button on the screen. Ten providers ship with the package; logos are vector data, not assets.',
+    'BCBrandLogo': 'A provider\'s brand mark painted as vector art at any size, in official colours or as a single-colour glyph. Used by `BCSocialAuthButton`; usable on its own for account rows and settings.',
     'BCLinkButton': 'Text-only action that reads as a link.',
     'BCCloseButton': '32px tertiary icon button used by dialogs and dismissible surfaces.',
     'BCFab': 'Floating action button.',
@@ -401,6 +406,38 @@ BCProgress(
   onPressed: () {},
   startContent: const Icon(Icons.add, size: 18),
   child: const Text('Add item'),
+);''',
+    'BCSocialAuthButton': '''// A stack of sign-in options: outline buttons, full width by default.
+Column(
+  spacing: 12,
+  children: [
+    BCSocialAuthButton(
+      provider: BCSocialProvider.google,
+      onPressed: signInWithGoogle,
+    ),
+    BCSocialAuthButton(
+      provider: BCSocialProvider.apple,
+      label: 'Continue with Apple',
+      isLoading: isAuthenticating, // logo -> spinner, presses blocked
+      onPressed: signInWithApple,
+    ),
+  ],
+);
+
+// Any BCButton variant and size works; on tinted variants the mark
+// goes monochrome so it does not clash with the background.
+BCSocialAuthButton(
+  provider: BCSocialProvider.microsoft,
+  variant: BCButtonVariant.primary,
+  size: BCButtonSize.lg,
+  onPressed: () {},
+);''',
+    'BCBrandLogo': '''const BCBrandLogo(provider: BCSocialProvider.github, size: 24);
+
+// Single-colour glyph instead of the brand colours.
+BCBrandLogo(
+  provider: BCSocialProvider.slack,
+  color: context.bcTheme.foreground,
 );''',
     'BCSpeedDial': '''BCSpeedDial(
   items: [

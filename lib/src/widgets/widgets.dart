@@ -1,6 +1,7 @@
 export 'bc_app_header.dart';
 export 'bc_avatar.dart';
 export 'bc_bottom_nav.dart';
+export 'bc_brand_logo.dart' show BCBrandLogo, BCSocialProvider;
 export 'bc_button.dart';
 export 'bc_card.dart';
 export 'bc_checkbox.dart';
@@ -36,6 +37,7 @@ export 'bc_select.dart';
 export 'bc_separator.dart';
 export 'bc_skeleton.dart';
 export 'bc_slider.dart';
+export 'bc_social_auth_button.dart';
 export 'bc_spinner.dart';
 export 'bc_surface.dart';
 export 'bc_switch.dart';
