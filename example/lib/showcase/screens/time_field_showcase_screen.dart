@@ -14,6 +14,8 @@ class _TimeFieldShowcaseScreenState extends State<TimeFieldShowcaseScreen> {
   TimeOfDay? _basic;
   TimeOfDay? _twentyFour;
   TimeOfDay? _stepped;
+  TimeOfDay? _popover;
+  TimeOfDay? _sheet;
 
   @override
   Widget build(BuildContext context) {
@@ -25,6 +27,38 @@ class _TimeFieldShowcaseScreenState extends State<TimeFieldShowcaseScreen> {
           builder: (context) => BCTimeField(
             value: _basic,
             onChanged: (time) => setState(() => _basic = time),
+          ),
+        ),
+        UsageVariant(
+          title: 'Presentations',
+          builder: (context) => Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            spacing: 28,
+            children: [
+              _Captioned(
+                label: 'Dialog (default, Cancel / Confirm)',
+                child: BCTimeField(
+                  value: _basic,
+                  onChanged: (time) => setState(() => _basic = time),
+                ),
+              ),
+              _Captioned(
+                label: 'Popover (applies live)',
+                child: BCTimeField(
+                  presentation: BCPickerPresentation.popover,
+                  value: _popover,
+                  onChanged: (time) => setState(() => _popover = time),
+                ),
+              ),
+              _Captioned(
+                label: 'Bottom sheet (applies live)',
+                child: BCTimeField(
+                  presentation: BCPickerPresentation.bottomSheet,
+                  value: _sheet,
+                  onChanged: (time) => setState(() => _sheet = time),
+                ),
+              ),
+            ],
           ),
         ),
         UsageVariant(
@@ -79,6 +113,28 @@ class _TimeFieldShowcaseScreenState extends State<TimeFieldShowcaseScreen> {
             ],
           ),
         ),
+      ],
+    );
+  }
+}
+
+/// Section caption above a picker.
+class _Captioned extends StatelessWidget {
+  const _Captioned({required this.label, required this.child});
+
+  final String label;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: BCSpacing.sm),
+          child: BCText(label, type: BCTextType.h6),
+        ),
+        child,
       ],
     );
   }

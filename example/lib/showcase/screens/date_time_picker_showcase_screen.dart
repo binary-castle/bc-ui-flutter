@@ -40,7 +40,7 @@ class _DateTimePickerShowcaseScreenState
               _Labelled(
                 label: 'Dialog',
                 child: BCDateTimePicker(
-                  presentation: BCDateTimePickerPresentation.dialog,
+                  presentation: BCPickerPresentation.dialog,
                   value: _dialog,
                   onChanged: (value) => setState(() => _dialog = value),
                 ),
@@ -48,7 +48,7 @@ class _DateTimePickerShowcaseScreenState
               _Labelled(
                 label: 'Bottom sheet',
                 child: BCDateTimePicker(
-                  presentation: BCDateTimePickerPresentation.bottomSheet,
+                  presentation: BCPickerPresentation.bottomSheet,
                   value: _sheet,
                   onChanged: (value) => setState(() => _sheet = value),
                 ),

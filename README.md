@@ -144,6 +144,10 @@ Full props, defaults and enums for every entry: **[API reference](doc/api.md)**.
 | **Selection** | [`BCCheckbox`](doc/api.md#bccheckbox) · [`BCRadioGroup`](doc/api.md#bcradiogroup) · [`BCSwitch`](doc/api.md#bcswitch) · [`BCSlider`](doc/api.md#bcslider) · [`BCRangeSlider`](doc/api.md#bcrangeslider) |
 | **Overlays** | [`BCDialog`](doc/api.md#bcdialog) · [`BCPopover`](doc/api.md#bcpopover) · [`BCMenu`](doc/api.md#bcmenu) · [`BCToast`](doc/api.md#bctoast) |
 
+The three pickers — `BCDateField`, `BCTimeField`, `BCDateTimePicker` — share a
+`presentation` prop (`dialog`, `popover`, `bottomSheet`), so swapping one for
+another never changes how it opens.
+
 Naming is predictable across the library: `variant` picks the look, `size`
 picks the metrics, state is controlled (`value` + `onValueChange`), and
 disabled/invalid are always `isDisabled` / `isInvalid`.

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart' show DayPeriod, Icons, TimeOfDay;
 import 'package:flutter/widgets.dart';
 
 import '../extensions/context_extension.dart';
+import '../overlay/bc_overlay_anchor.dart';
 import '../theme/theme_extensions.dart';
 import '../tokens/bc_radius.dart';
 import '../tokens/bc_shapes.dart';
@@ -9,13 +10,14 @@ import '../tokens/bc_typography.dart';
 import 'bc_button.dart';
 import 'bc_dialog.dart';
 import 'bc_input.dart' show BCInputVariant;
+import 'bc_picker_presentation.dart';
 import 'bc_pressable.dart';
 
 /// A time-picker field styled like [BCInput], with a trailing clock icon.
 ///
 /// Tapping the field opens [BCTimePickerDialog] — a scroll-wheel picker built
 /// entirely from bc_ui tokens, matching the design system in light and dark.
-class BCTimeField extends StatelessWidget {
+class BCTimeField extends StatefulWidget {
   const BCTimeField({
     super.key,
     this.value,
@@ -27,6 +29,7 @@ class BCTimeField extends StatelessWidget {
     this.use24HourFormat = false,
     this.minuteStep = 1,
     this.formatTime,
+    this.presentation = BCPickerPresentation.dialog,
     this.icon = const Icon(Icons.access_time),
   });
 
@@ -47,13 +50,31 @@ class BCTimeField extends StatelessWidget {
   /// (or `HH:mm` in 24-hour mode).
   final String Function(TimeOfDay time)? formatTime;
 
+  /// Where the wheels appear: a dialog with Cancel / Confirm (default), a
+  /// popover anchored to the field, or a bottom sheet. Popover and sheet
+  /// apply each spin live.
+  final BCPickerPresentation presentation;
+
   /// Trailing icon; defaults to a clock glyph.
   final Widget icon;
 
+  @override
+  State<BCTimeField> createState() => _BCTimeFieldState();
+}
+
+class _BCTimeFieldState extends State<BCTimeField> {
+  final BCAnchoredOverlayController _overlay = BCAnchoredOverlayController();
+
+  @override
+  void dispose() {
+    _overlay.dispose();
+    super.dispose();
+  }
+
   String _format(TimeOfDay time) {
-    if (formatTime != null) return formatTime!(time);
+    if (widget.formatTime != null) return widget.formatTime!(time);
     final minute = time.minute.toString().padLeft(2, '0');
-    if (use24HourFormat) {
+    if (widget.use24HourFormat) {
       return '${time.hour.toString().padLeft(2, '0')}:$minute';
     }
     final h = time.hourOfPeriod == 0 ? 12 : time.hourOfPeriod;
@@ -61,39 +82,57 @@ class BCTimeField extends StatelessWidget {
     return '$h:$minute $period';
   }
 
-  Future<void> _open(BuildContext context) async {
-    final picked = await BCTimePickerDialog.show(
-      context,
-      initialTime: value,
-      use24HourFormat: use24HourFormat,
-      minuteStep: minuteStep,
-    );
-    if (picked != null) onChanged?.call(picked);
+  Widget _wheels() => BCTimeWheel(
+    initialTime: widget.value,
+    use24HourFormat: widget.use24HourFormat,
+    minuteStep: widget.minuteStep,
+    onChanged: (time) => widget.onChanged?.call(time),
+  );
+
+  Future<void> _open() async {
+    switch (widget.presentation) {
+      case BCPickerPresentation.dialog:
+        final picked = await BCTimePickerDialog.show(
+          context,
+          initialTime: widget.value,
+          use24HourFormat: widget.use24HourFormat,
+          minuteStep: widget.minuteStep,
+        );
+        if (picked != null) widget.onChanged?.call(picked);
+      case BCPickerPresentation.popover:
+        _overlay.open();
+      case BCPickerPresentation.bottomSheet:
+        await showBCPickerSheet<void>(context, builder: (_) => _wheels());
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final bc = context.bcTheme;
+    final value = widget.value;
     final hasValue = value != null;
 
-    final side = isInvalid
+    final side = widget.isInvalid
         ? BorderSide(color: bc.danger, width: 2)
         : BorderSide.none;
 
     Widget field = Container(
       constraints: const BoxConstraints(minHeight: 48),
       decoration: ShapeDecoration(
-        color: variant == BCInputVariant.primary ? bc.field : bc.defaultColor,
+        color: widget.variant == BCInputVariant.primary
+            ? bc.field
+            : bc.defaultColor,
         shape: BCShapes.continuous(BCRadius.field, side: side),
-        shadows:
-            variant == BCInputVariant.primary ? bc.fieldShadow.shadows : null,
+        shadows: widget.variant == BCInputVariant.primary
+            ? bc.fieldShadow.shadows
+            : null,
       ),
       padding: const EdgeInsets.symmetric(horizontal: 12),
       child: Row(
         children: [
           Expanded(
             child: Text(
-              hasValue ? _format(value!) : placeholder,
+              hasValue ? _format(value) : widget.placeholder,
               style: BCTypography.textBase.copyWith(
                 color: hasValue ? bc.foreground : bc.fieldPlaceholder,
               ),
@@ -101,63 +140,66 @@ class BCTimeField extends StatelessWidget {
           ),
           IconTheme.merge(
             data: IconThemeData(color: bc.muted, size: 20),
-            child: icon,
+            child: widget.icon,
           ),
         ],
       ),
     );
 
-    if (isDisabled) {
+    field = BCPressable(
+      feedback: BCPressFeedback.scale,
+      enabled: !widget.isDisabled,
+      onPressed: widget.isDisabled ? null : _open,
+      child: field,
+    );
+
+    if (widget.presentation == BCPickerPresentation.popover) {
+      field = BCAnchoredOverlay(
+        controller: _overlay,
+        matchAnchorWidth: true,
+        overlayBuilder: (_) => BCPickerPanel(child: _wheels()),
+        child: field,
+      );
+    }
+
+    if (widget.isDisabled) {
       field = Opacity(
         opacity: bc.opacityDisabled,
         child: IgnorePointer(child: field),
       );
     }
 
-    return BCPressable(
-      feedback: BCPressFeedback.scale,
-      enabled: !isDisabled,
-      onPressed: isDisabled ? null : () => _open(context),
-      child: field,
-    );
+    return field;
   }
 }
 
-/// The scroll-wheel time picker opened by [BCTimeField]. Can also be used
-/// directly: `final time = await BCTimePickerDialog.show(context, ...);`
-class BCTimePickerDialog extends StatefulWidget {
-  const BCTimePickerDialog({
+/// Hour / minute (and AM/PM) scroll wheels.
+///
+/// This is the panel behind [BCTimeField] in every presentation; use it
+/// directly to embed time selection in a form or a sheet of your own.
+class BCTimeWheel extends StatefulWidget {
+  const BCTimeWheel({
     super.key,
     this.initialTime,
     this.use24HourFormat = false,
     this.minuteStep = 1,
+    required this.onChanged,
   });
 
   final TimeOfDay? initialTime;
   final bool use24HourFormat;
+
+  /// Minute increment shown on the wheel (e.g. 5 → 00, 05, 10 …).
   final int minuteStep;
 
-  static Future<TimeOfDay?> show(
-    BuildContext context, {
-    TimeOfDay? initialTime,
-    bool use24HourFormat = false,
-    int minuteStep = 1,
-  }) {
-    return BCDialog.show<TimeOfDay>(
-      context,
-      builder: (dialogContext) => BCTimePickerDialog(
-        initialTime: initialTime,
-        use24HourFormat: use24HourFormat,
-        minuteStep: minuteStep,
-      ),
-    );
-  }
+  /// Fires as each wheel settles.
+  final ValueChanged<TimeOfDay> onChanged;
 
   @override
-  State<BCTimePickerDialog> createState() => _BCTimePickerDialogState();
+  State<BCTimeWheel> createState() => _BCTimeWheelState();
 }
 
-class _BCTimePickerDialogState extends State<BCTimePickerDialog> {
+class _BCTimeWheelState extends State<BCTimeWheel> {
   static const double _itemExtent = 44;
   static const double _wheelHeight = 220;
 
@@ -234,106 +276,73 @@ class _BCTimePickerDialogState extends State<BCTimePickerDialog> {
   Widget build(BuildContext context) {
     final bc = context.bcTheme;
 
-    return BCDialogContent(
-      width: 300,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+    return SizedBox(
+      height: _wheelHeight,
+      child: Stack(
         children: [
-          Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: Text(
-              'Select time',
-              style: BCTypography.textLg.copyWith(
-                color: bc.foreground,
-                fontWeight: BCTypography.medium,
+          // Center selection band.
+          Center(
+            child: Container(
+              height: _itemExtent,
+              decoration: ShapeDecoration(
+                color: bc.defaultColor,
+                shape: BCShapes.continuous(BCRadius.xl),
               ),
             ),
           ),
-          SizedBox(
-            height: _wheelHeight,
-            child: Stack(
-              children: [
-                // Center selection band.
-                Center(
-                  child: Container(
-                    height: _itemExtent,
-                    decoration: ShapeDecoration(
-                      color: bc.defaultColor,
-                      shape: BCShapes.continuous(BCRadius.xl),
-                    ),
-                  ),
-                ),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _wheel(
-                        controller: _hourController,
-                        count: _hours.length,
-                        selected: _hourIndex,
-                        label: (i) => _is24
-                            ? _hours[i].toString().padLeft(2, '0')
-                            : _hours[i].toString(),
-                        onChanged: (i) => setState(() => _hourIndex = i),
-                        bc: bc,
-                      ),
-                    ),
-                    Text(
-                      ':',
-                      style: BCTypography.textXl.copyWith(
-                        color: bc.foreground,
-                        fontWeight: BCTypography.semiBold,
-                      ),
-                    ),
-                    Expanded(
-                      child: _wheel(
-                        controller: _minuteController,
-                        count: _minutes.length,
-                        selected: _minuteIndex,
-                        label: (i) =>
-                            _minutes[i].toString().padLeft(2, '0'),
-                        onChanged: (i) => setState(() => _minuteIndex = i),
-                        bc: bc,
-                      ),
-                    ),
-                    if (!_is24)
-                      Expanded(
-                        child: _wheel(
-                          controller: _periodController,
-                          count: 2,
-                          selected: _periodIndex,
-                          label: (i) => i == 0 ? 'AM' : 'PM',
-                          onChanged: (i) => setState(() => _periodIndex = i),
-                          bc: bc,
-                        ),
-                      ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
           Row(
             children: [
               Expanded(
-                child: BCButton(
-                  variant: BCButtonVariant.ghost,
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('Cancel'),
+                child: _wheel(
+                  controller: _hourController,
+                  count: _hours.length,
+                  selected: _hourIndex,
+                  label: (i) => _is24
+                      ? _hours[i].toString().padLeft(2, '0')
+                      : _hours[i].toString(),
+                  onChanged: (i) => _update(() => _hourIndex = i),
+                  bc: bc,
                 ),
               ),
-              const SizedBox(width: 8),
+              Text(
+                ':',
+                style: BCTypography.textXl.copyWith(
+                  color: bc.foreground,
+                  fontWeight: BCTypography.semiBold,
+                ),
+              ),
               Expanded(
-                child: BCButton(
-                  onPressed: () => Navigator.of(context).pop(_result),
-                  child: const Text('Confirm'),
+                child: _wheel(
+                  controller: _minuteController,
+                  count: _minutes.length,
+                  selected: _minuteIndex,
+                  label: (i) => _minutes[i].toString().padLeft(2, '0'),
+                  onChanged: (i) => _update(() => _minuteIndex = i),
+                  bc: bc,
                 ),
               ),
+              if (!_is24)
+                Expanded(
+                  child: _wheel(
+                    controller: _periodController,
+                    count: 2,
+                    selected: _periodIndex,
+                    label: (i) => i == 0 ? 'AM' : 'PM',
+                    onChanged: (i) => _update(() => _periodIndex = i),
+                    bc: bc,
+                  ),
+                ),
             ],
           ),
         ],
       ),
     );
+  }
+
+  /// Applies a wheel move and reports the composed time.
+  void _update(VoidCallback apply) {
+    setState(apply);
+    widget.onChanged(_result);
   }
 
   Widget _wheel({
@@ -360,12 +369,102 @@ class _BCTimePickerDialogState extends State<BCTimePickerDialog> {
               label(index),
               style: BCTypography.textLg.copyWith(
                 color: isSelected ? bc.foreground : bc.muted,
-                fontWeight:
-                    isSelected ? BCTypography.semiBold : BCTypography.regular,
+                fontWeight: isSelected
+                    ? BCTypography.semiBold
+                    : BCTypography.regular,
               ),
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+/// The time wheels in a modal dialog, with Cancel / Confirm. Kept as a
+/// standalone entry point:
+/// `final time = await BCTimePickerDialog.show(context, ...);`
+class BCTimePickerDialog extends StatefulWidget {
+  const BCTimePickerDialog({
+    super.key,
+    this.initialTime,
+    this.use24HourFormat = false,
+    this.minuteStep = 1,
+  });
+
+  final TimeOfDay? initialTime;
+  final bool use24HourFormat;
+  final int minuteStep;
+
+  static Future<TimeOfDay?> show(
+    BuildContext context, {
+    TimeOfDay? initialTime,
+    bool use24HourFormat = false,
+    int minuteStep = 1,
+  }) {
+    return BCDialog.show<TimeOfDay>(
+      context,
+      builder: (dialogContext) => BCTimePickerDialog(
+        initialTime: initialTime,
+        use24HourFormat: use24HourFormat,
+        minuteStep: minuteStep,
+      ),
+    );
+  }
+
+  @override
+  State<BCTimePickerDialog> createState() => _BCTimePickerDialogState();
+}
+
+class _BCTimePickerDialogState extends State<BCTimePickerDialog> {
+  late TimeOfDay _pending = widget.initialTime ?? TimeOfDay.now();
+
+  @override
+  Widget build(BuildContext context) {
+    final bc = context.bcTheme;
+
+    return BCDialogContent(
+      width: 300,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Text(
+              'Select time',
+              style: BCTypography.textLg.copyWith(
+                color: bc.foreground,
+                fontWeight: BCTypography.medium,
+              ),
+            ),
+          ),
+          BCTimeWheel(
+            initialTime: widget.initialTime,
+            use24HourFormat: widget.use24HourFormat,
+            minuteStep: widget.minuteStep,
+            onChanged: (time) => _pending = time,
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: BCButton(
+                  variant: BCButtonVariant.ghost,
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Cancel'),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: BCButton(
+                  onPressed: () => Navigator.of(context).pop(_pending),
+                  child: const Text('Confirm'),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

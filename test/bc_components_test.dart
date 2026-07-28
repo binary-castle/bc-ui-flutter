@@ -412,6 +412,130 @@ void main() {
     });
   });
 
+  group('Picker presentations', () {
+    testWidgets('BCDateField opens the calendar in all three presentations',
+        (tester) async {
+      for (final presentation in BCPickerPresentation.values) {
+        DateTime? picked;
+        await tester.pumpWidget(
+          _app(
+            SizedBox(
+              width: 340,
+              child: BCDateField(
+                presentation: presentation,
+                value: DateTime(2026, 7, 15),
+                firstDate: DateTime(2026, 1, 1),
+                lastDate: DateTime(2026, 12, 31),
+                onChanged: (value) => picked = value,
+              ),
+            ),
+          ),
+        );
+
+        await tester.tap(find.byType(BCDateField));
+        await tester.pumpAndSettle();
+        expect(
+          find.byType(BCCalendar),
+          findsOneWidget,
+          reason: '$presentation should show the calendar',
+        );
+
+        // Selecting a day commits and closes, whichever presentation it is.
+        await tester.tap(find.text('20'));
+        await tester.pumpAndSettle();
+        expect(picked, DateTime(2026, 7, 20), reason: '$presentation');
+        expect(find.byType(BCCalendar), findsNothing, reason: '$presentation');
+      }
+    });
+
+    testWidgets('BCTimeField opens the wheels in all three presentations',
+        (tester) async {
+      for (final presentation in BCPickerPresentation.values) {
+        await tester.pumpWidget(
+          _app(
+            SizedBox(
+              width: 320,
+              child: BCTimeField(
+                presentation: presentation,
+                value: const TimeOfDay(hour: 9, minute: 0),
+                onChanged: (_) {},
+              ),
+            ),
+          ),
+        );
+
+        await tester.tap(find.byType(BCTimeField));
+        await tester.pumpAndSettle();
+        expect(
+          find.byType(BCTimeWheel),
+          findsOneWidget,
+          reason: '$presentation should show the wheels',
+        );
+        expect(tester.takeException(), isNull, reason: '$presentation');
+      }
+    });
+
+    testWidgets('time popover and sheet report spins live', (tester) async {
+      for (final presentation in [
+        BCPickerPresentation.popover,
+        BCPickerPresentation.bottomSheet,
+      ]) {
+        TimeOfDay? reported;
+        await tester.pumpWidget(
+          _app(
+            SizedBox(
+              width: 320,
+              child: BCTimeField(
+                presentation: presentation,
+                value: const TimeOfDay(hour: 9, minute: 0),
+                onChanged: (value) => reported = value,
+              ),
+            ),
+          ),
+        );
+
+        await tester.tap(find.byType(BCTimeField));
+        await tester.pumpAndSettle();
+
+        await tester.drag(
+          find.byType(ListWheelScrollView).at(1), // minutes
+          const Offset(0, -44),
+        );
+        await tester.pumpAndSettle();
+
+        expect(reported?.minute, 1, reason: '$presentation applies live');
+      }
+    });
+
+    testWidgets('time dialog still waits for Confirm', (tester) async {
+      TimeOfDay? reported;
+      await tester.pumpWidget(
+        _app(
+          SizedBox(
+            width: 320,
+            child: BCTimeField(
+              value: const TimeOfDay(hour: 9, minute: 0),
+              onChanged: (value) => reported = value,
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.byType(BCTimeField));
+      await tester.pumpAndSettle();
+      await tester.drag(
+        find.byType(ListWheelScrollView).at(1),
+        const Offset(0, -44),
+      );
+      await tester.pumpAndSettle();
+      expect(reported, isNull);
+
+      await tester.tap(find.text('Confirm'));
+      await tester.pumpAndSettle();
+      expect(reported?.minute, 1);
+    });
+  });
+
   group('BCDateTimePicker', () {
     final first = DateTime(2026, 7, 1);
     final last = DateTime(2026, 8, 31, 23, 59);

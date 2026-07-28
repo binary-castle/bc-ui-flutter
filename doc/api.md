@@ -17,7 +17,7 @@ source, so they track the code.
 - [Actions](#actions) — `BCButton`, `BCLinkButton`, `BCCloseButton`, `BCFab`, `BCSpeedDial`, `BCToggleButton`, `BCToggleButtonGroup`, `BCPressable`
 - [Containers](#containers) — `BCSurface`, `BCCard`, `BCListGroup`, `BCFlipCard`, `BCScrollShadow`
 - [Data display](#data-display) — `BCText`, `BCAvatar`, `BCChip`, `BCTagGroup`, `BCSeparator`, `BCSkeleton`, `BCSpinner`, `BCProgress`, `BCLoadingOverlay`, `BCRating`, `BCEmptyState`
-- [Forms](#forms) — `BCInput`, `BCTextField`, `BCTextArea`, `BCPasswordInput`, `BCSearchField`, `BCInputOTP`, `BCDateField`, `BCTimeField`, `BCDateTimePicker`, `BCDateTimeWheel`, `BCSelect`, `BCControlField`
+- [Forms](#forms) — `BCInput`, `BCTextField`, `BCTextArea`, `BCPasswordInput`, `BCSearchField`, `BCInputOTP`, `BCDateField`, `BCTimeField`, `BCDateTimePicker`, `BCDateTimeWheel`, `BCCalendar`, `BCTimeWheel`, `BCSelect`, `BCControlField`
 - [Selection](#selection) — `BCCheckbox`, `BCRadioGroup`, `BCSwitch`, `BCSlider`, `BCRangeSlider`
 - [Overlays](#overlays) — `BCDialog`, `BCPopover`, `BCMenu`, `BCToast`
 
@@ -37,6 +37,9 @@ A few rules hold across the whole library, so you can guess most APIs:
 - **Disabled is `isDisabled`, invalid is `isInvalid`** — never `enabled: false`.
 - **Compound components** (Card, TextField, InputOTP, Dialog, Menu) are built
   from named parts you compose as children, mirroring heroui-native.
+- **Pickers share one `presentation`.** `BCDateField`, `BCTimeField` and
+  `BCDateTimePicker` all take a `BCPickerPresentation` — `dialog`,
+  `popover` or `bottomSheet` — and behave the same way in each.
 - **Continuous corners everywhere.** Radii come from `BCRadius` and are drawn
   with `BCShapes.continuous` (Apple-style squircles), not plain circles.
 
@@ -1497,7 +1500,7 @@ BCInputOTP(
 
 ### BCDateField
 
-Read-only field that opens a date picker dialog. Months change by swiping the calendar grid or with the header arrows.
+Read-only field that opens a calendar in a dialog, a popover or a bottom sheet (`presentation`). Months change by swiping the grid or with the header arrows.
 
 | Prop | Type | Default | Notes |
 |---|---|---|---|
@@ -1510,13 +1513,16 @@ Read-only field that opens a date picker dialog. Months change by swiping the ca
 | `isInvalid` | `bool` | `false` |  |
 | `isDisabled` | `bool` | `false` |  |
 | `formatDate` | `String Function(DateTime date)?` | — | Formats the selected value for display. Defaults to `MMMM d, y` (e.g. "July 26, 2026"). |
+| `presentation` | `BCPickerPresentation` | `BCPickerPresentation.dialog` | Where the calendar appears: a dialog (default), a popover anchored to the field, or a bottom sheet. Selecting a day commits and closes in all three. |
 | `icon` | `Widget` | `const Icon(Icons.calendar_today_outlined)` | Trailing icon; defaults to a calendar glyph. |
 
 **`BCInputVariant`** — `primary`, `secondary`
 
+**`BCPickerPresentation`** — `popover`, `dialog`, `bottomSheet`
+
 <details><summary><code>BCDatePickerDialog</code></summary>
 
-The calendar dialog opened by `BCDateField`. Can also be used directly: `final date = await BCDatePickerDialog.show(context, ...);`  Months are pages: swipe the grid horizontally to move between them, or use the header arrows, which animate the same pager. The grid is always six week-rows tall so the dialog keeps a constant height.
+The calendar in a modal dialog. Kept as a standalone entry point: `final date = await BCDatePickerDialog.show(context, ...);`
 
 | Prop | Type | Default | Notes |
 |---|---|---|---|
@@ -1526,9 +1532,23 @@ The calendar dialog opened by `BCDateField`. Can also be used directly: `final d
 
 </details>
 
+<details><summary><code>BCCalendar</code></summary>
+
+A month calendar: header with a month/year toggle and arrows, weekday row, and a swipeable grid of days.  This is the panel behind `BCDateField` in every presentation; use it directly to embed a calendar in a form or a sheet of your own.  Months are pages: swipe the grid horizontally to move between them, or use the header arrows, which animate the same pager. The grid is always six week-rows tall so the surface keeps a constant height.
+
+| Prop | Type | Default | Notes |
+|---|---|---|---|
+| `initialDate` | `DateTime?` | — | Month to open on. Defaults to `selectedDate`, else today. |
+| `selectedDate` | `DateTime?` | — | Day drawn as selected. |
+| `firstDate` | `DateTime` | required |  |
+| `lastDate` | `DateTime` | required |  |
+| `onDateSelected` | `ValueChanged<DateTime>` | required |  |
+
+</details>
+
 ### BCTimeField
 
-Read-only field that opens a time picker dialog.
+Read-only field that opens the hour/minute wheels in a dialog, a popover or a bottom sheet (`presentation`). The dialog commits on Confirm; popover and sheet apply each spin live.
 
 | Prop | Type | Default | Notes |
 |---|---|---|---|
@@ -1541,19 +1561,35 @@ Read-only field that opens a time picker dialog.
 | `use24HourFormat` | `bool` | `false` | 24-hour wheel (no AM/PM) when true; 12-hour with AM/PM otherwise. |
 | `minuteStep` | `int` | `1` | Minute increment shown on the wheel (e.g. 5 → 00, 05, 10 …). |
 | `formatTime` | `String Function(TimeOfDay time)?` | — | Formats the selected value for display. Defaults to `h:mm AM/PM` (or `HH:mm` in 24-hour mode). |
+| `presentation` | `BCPickerPresentation` | `BCPickerPresentation.dialog` | Where the wheels appear: a dialog with Cancel / Confirm (default), a popover anchored to the field, or a bottom sheet. Popover and sheet apply each spin live. |
 | `icon` | `Widget` | `const Icon(Icons.access_time)` | Trailing icon; defaults to a clock glyph. |
 
 **`BCInputVariant`** — `primary`, `secondary`
 
+**`BCPickerPresentation`** — `popover`, `dialog`, `bottomSheet`
+
 <details><summary><code>BCTimePickerDialog</code></summary>
 
-The scroll-wheel time picker opened by `BCTimeField`. Can also be used directly: `final time = await BCTimePickerDialog.show(context, ...);`
+The time wheels in a modal dialog, with Cancel / Confirm. Kept as a standalone entry point: `final time = await BCTimePickerDialog.show(context, ...);`
 
 | Prop | Type | Default | Notes |
 |---|---|---|---|
 | `initialTime` | `TimeOfDay?` | — |  |
 | `use24HourFormat` | `bool` | `false` |  |
 | `minuteStep` | `int` | `1` |  |
+
+</details>
+
+<details><summary><code>BCTimeWheel</code></summary>
+
+Hour / minute (and AM/PM) scroll wheels.  This is the panel behind `BCTimeField` in every presentation; use it directly to embed time selection in a form or a sheet of your own.
+
+| Prop | Type | Default | Notes |
+|---|---|---|---|
+| `initialTime` | `TimeOfDay?` | — |  |
+| `use24HourFormat` | `bool` | `false` |  |
+| `minuteStep` | `int` | `1` | Minute increment shown on the wheel (e.g. 5 → 00, 05, 10 …). |
+| `onChanged` | `ValueChanged<TimeOfDay>` | required | Fires as each wheel settles. |
 
 </details>
 
@@ -1586,7 +1622,7 @@ BCDateTimePicker(
 | `onChanged` | `ValueChanged<DateTime>?` | — |  |
 | `firstDate` | `DateTime?` | — | Earliest selectable moment. Defaults to the start of today. |
 | `lastDate` | `DateTime?` | — | Latest selectable moment. Defaults to five years out. |
-| `presentation` | `BCDateTimePickerPresentation` | `BCDateTimePickerPresentation.popover` | Popover and bottom sheet apply each spin immediately; the dialog waits for Confirm. |
+| `presentation` | `BCPickerPresentation` | `BCPickerPresentation.popover` | Popover and bottom sheet apply each spin immediately; the dialog waits for Confirm. |
 | `use24HourFormat` | `bool` | `false` |  |
 | `minuteInterval` | `int` | `1` | Minute step, e.g. 5 for `00, 05, 10 …`. |
 | `placeholder` | `String` | `'Choose a date & time'` |  |
@@ -1602,7 +1638,7 @@ BCDateTimePicker(
 | `icon` | `Widget` | `const Icon(Icons.calendar_today_outlined)` |  |
 | `wheelHeight` | `double` | `220` |  |
 
-**`BCDateTimePickerPresentation`** — `popover`, `dialog`, `bottomSheet`
+**`BCPickerPresentation`** — `popover`, `dialog`, `bottomSheet`
 
 **`BCInputVariant`** — `primary`, `secondary`
 
@@ -1637,6 +1673,29 @@ The wheels behind `BCDateTimePicker`, usable on their own to embed day/time sele
 | `minuteInterval` | `int` | `1` | Minute step, e.g. 5 for `00, 05, 10 …`. |
 | `formatDay` | `String Function(DateTime day)?` | — | Day column label. Defaults to `Today` for the current date and `Wed, Jul 29` otherwise. |
 | `height` | `double` | `220` |  |
+
+### BCCalendar
+
+The month calendar behind `BCDateField`: header, weekday row and a swipeable six-row day grid. Usable on its own.
+
+| Prop | Type | Default | Notes |
+|---|---|---|---|
+| `initialDate` | `DateTime?` | — | Month to open on. Defaults to `selectedDate`, else today. |
+| `selectedDate` | `DateTime?` | — | Day drawn as selected. |
+| `firstDate` | `DateTime` | required |  |
+| `lastDate` | `DateTime` | required |  |
+| `onDateSelected` | `ValueChanged<DateTime>` | required |  |
+
+### BCTimeWheel
+
+The hour / minute (and AM/PM) wheels behind `BCTimeField`. Usable on its own.
+
+| Prop | Type | Default | Notes |
+|---|---|---|---|
+| `initialTime` | `TimeOfDay?` | — |  |
+| `use24HourFormat` | `bool` | `false` |  |
+| `minuteStep` | `int` | `1` | Minute increment shown on the wheel (e.g. 5 → 00, 05, 10 …). |
+| `onChanged` | `ValueChanged<TimeOfDay>` | required | Fires as each wheel settles. |
 
 ### BCSelect
 

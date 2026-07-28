@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart' show Icons, showModalBottomSheet;
+import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 
 import '../extensions/context_extension.dart';
@@ -12,23 +12,11 @@ import '../tokens/bc_typography.dart';
 import 'bc_button.dart';
 import 'bc_dialog.dart';
 import 'bc_input.dart' show BCInputVariant;
+import 'bc_picker_presentation.dart';
 import 'bc_pressable.dart';
 import 'field_parts/bc_description.dart';
 import 'field_parts/bc_field_error.dart';
 import 'field_parts/bc_label.dart';
-
-/// How a [BCDateTimePicker] surfaces its wheels.
-enum BCDateTimePickerPresentation {
-  /// Anchored under the field, matching its width. Selection applies live.
-  popover,
-
-  /// Centered modal with Cancel / Confirm, so the value only commits on
-  /// confirm.
-  dialog,
-
-  /// Slides up from the bottom edge. Selection applies live.
-  bottomSheet,
-}
 
 /// Scrolling day + time wheels, in the style of iOS pickers but built from
 /// bc_ui tokens.
@@ -375,7 +363,7 @@ class BCDateTimePicker extends StatefulWidget {
     this.onChanged,
     this.firstDate,
     this.lastDate,
-    this.presentation = BCDateTimePickerPresentation.popover,
+    this.presentation = BCPickerPresentation.popover,
     this.use24HourFormat = false,
     this.minuteInterval = 1,
     this.placeholder = 'Choose a date & time',
@@ -403,7 +391,7 @@ class BCDateTimePicker extends StatefulWidget {
 
   /// Popover and bottom sheet apply each spin immediately; the dialog waits
   /// for Confirm.
-  final BCDateTimePickerPresentation presentation;
+  final BCPickerPresentation presentation;
 
   final bool use24HourFormat;
 
@@ -520,30 +508,13 @@ class _BCDateTimePickerState extends State<BCDateTimePicker> {
     );
   }
 
-  /// Panel chrome shared by the popover and the sheet.
-  Widget _panel(BuildContext context, Widget child) {
-    final bc = context.bcTheme;
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: BCSpacing.sm),
-      decoration: ShapeDecoration(
-        color: bc.overlay,
-        shape: BCShapes.continuous(
-          BCRadius.xxxl,
-          side: bc.overlayShadow.innerBorder ?? BorderSide.none,
-        ),
-        shadows: bc.overlayShadow.shadows,
-      ),
-      child: child,
-    );
-  }
-
   void _open() {
     switch (widget.presentation) {
-      case BCDateTimePickerPresentation.popover:
+      case BCPickerPresentation.popover:
         _overlay.open();
-      case BCDateTimePickerPresentation.dialog:
+      case BCPickerPresentation.dialog:
         _openDialog();
-      case BCDateTimePickerPresentation.bottomSheet:
+      case BCPickerPresentation.bottomSheet:
         _openSheet();
     }
   }
@@ -611,58 +582,10 @@ class _BCDateTimePickerState extends State<BCDateTimePicker> {
     }
   }
 
-  /// Flutter's modal sheet route, styled from bc_ui tokens. Going through
-  /// the real route is what gives drag-to-dismiss, the fling velocity and
-  /// the scrim that tracks the drag — a hand-rolled slide transition has
-  /// none of that.
   Future<void> _openSheet() {
-    final bc = context.bcTheme;
-
-    return showModalBottomSheet<void>(
-      context: context,
-      // The sheet paints its own surface below, so the route's is invisible.
-      backgroundColor: const Color(0x00000000),
-      barrierColor: bc.backdrop,
-      elevation: 0,
-      isScrollControlled: true,
-      builder: (sheetContext) {
-        return Container(
-          width: double.infinity,
-          // The home-indicator inset lives *inside* the sheet: padding it
-          // from the outside would float the sheet off the bottom edge.
-          padding: EdgeInsets.fromLTRB(
-            BCSpacing.sm,
-            BCSpacing.sm,
-            BCSpacing.sm,
-            BCSpacing.sm + MediaQuery.viewPaddingOf(sheetContext).bottom,
-          ),
-          decoration: ShapeDecoration(
-            color: bc.overlay,
-            shape: BCShapes.continuousFrom(
-              const BorderRadius.vertical(top: Radius.circular(BCRadius.xxxl)),
-              side: bc.overlayShadow.innerBorder ?? BorderSide.none,
-            ),
-            shadows: bc.overlayShadow.shadows,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Grab handle. Material can draw its own, but this one uses
-              // the separator token and matches the rest of the library.
-              Container(
-                width: 36,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: BCSpacing.sm),
-                decoration: ShapeDecoration(
-                  color: bc.separator,
-                  shape: BCShapes.continuous(BCRadius.full),
-                ),
-              ),
-              _wheel(onChanged: _handleLiveChange),
-            ],
-          ),
-        );
-      },
+    return showBCPickerSheet<void>(
+      context,
+      builder: (_) => _wheel(onChanged: _handleLiveChange),
     );
   }
 
@@ -716,12 +639,12 @@ class _BCDateTimePickerState extends State<BCDateTimePicker> {
       child: field,
     );
 
-    if (widget.presentation == BCDateTimePickerPresentation.popover) {
+    if (widget.presentation == BCPickerPresentation.popover) {
       field = BCAnchoredOverlay(
         controller: _overlay,
         matchAnchorWidth: true,
         overlayBuilder: (overlayContext) =>
-            _panel(overlayContext, _wheel(onChanged: _handleLiveChange)),
+            BCPickerPanel(child: _wheel(onChanged: _handleLiveChange)),
         child: field,
       );
     }

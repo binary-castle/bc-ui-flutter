@@ -14,6 +14,8 @@ class _DateFieldShowcaseScreenState extends State<DateFieldShowcaseScreen> {
   DateTime? _basic;
   DateTime? _labelled;
   DateTime? _bounded;
+  DateTime? _popover;
+  DateTime? _sheet;
 
   @override
   Widget build(BuildContext context) {
@@ -27,6 +29,38 @@ class _DateFieldShowcaseScreenState extends State<DateFieldShowcaseScreen> {
           builder: (context) => BCDateField(
             value: _basic,
             onChanged: (date) => setState(() => _basic = date),
+          ),
+        ),
+        UsageVariant(
+          title: 'Presentations',
+          builder: (context) => Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            spacing: 28,
+            children: [
+              _Captioned(
+                label: 'Dialog (default)',
+                child: BCDateField(
+                  value: _basic,
+                  onChanged: (date) => setState(() => _basic = date),
+                ),
+              ),
+              _Captioned(
+                label: 'Popover',
+                child: BCDateField(
+                  presentation: BCPickerPresentation.popover,
+                  value: _popover,
+                  onChanged: (date) => setState(() => _popover = date),
+                ),
+              ),
+              _Captioned(
+                label: 'Bottom sheet',
+                child: BCDateField(
+                  presentation: BCPickerPresentation.bottomSheet,
+                  value: _sheet,
+                  onChanged: (date) => setState(() => _sheet = date),
+                ),
+              ),
+            ],
           ),
         ),
         UsageVariant(
@@ -89,4 +123,26 @@ class _FieldSlot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => child;
+}
+
+/// Section caption above a picker.
+class _Captioned extends StatelessWidget {
+  const _Captioned({required this.label, required this.child});
+
+  final String label;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: BCSpacing.sm),
+          child: BCText(label, type: BCTextType.h6),
+        ),
+        child,
+      ],
+    );
+  }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 
 import '../extensions/context_extension.dart';
+import '../overlay/bc_overlay_anchor.dart';
 import '../theme/theme_extensions.dart';
 import '../tokens/bc_duration.dart';
 import '../tokens/bc_radius.dart';
@@ -9,6 +10,7 @@ import '../tokens/bc_shapes.dart';
 import '../tokens/bc_typography.dart';
 import 'bc_dialog.dart';
 import 'bc_input.dart' show BCInputVariant;
+import 'bc_picker_presentation.dart';
 import 'bc_pressable.dart';
 
 /// A date-picker field styled like [BCInput], with a trailing calendar icon.
@@ -17,7 +19,7 @@ import 'bc_pressable.dart';
 /// from bc_ui tokens (not Material's `showDatePicker`), so it matches the
 /// design system in light and dark. Months change by swiping the grid left
 /// or right as well as with the header arrows.
-class BCDateField extends StatelessWidget {
+class BCDateField extends StatefulWidget {
   const BCDateField({
     super.key,
     this.value,
@@ -29,6 +31,7 @@ class BCDateField extends StatelessWidget {
     this.isInvalid = false,
     this.isDisabled = false,
     this.formatDate,
+    this.presentation = BCPickerPresentation.dialog,
     this.icon = const Icon(Icons.calendar_today_outlined),
   });
 
@@ -50,45 +53,94 @@ class BCDateField extends StatelessWidget {
   /// (e.g. "July 26, 2026").
   final String Function(DateTime date)? formatDate;
 
+  /// Where the calendar appears: a dialog (default), a popover anchored to
+  /// the field, or a bottom sheet. Selecting a day commits and closes in all
+  /// three.
+  final BCPickerPresentation presentation;
+
   /// Trailing icon; defaults to a calendar glyph.
   final Widget icon;
 
+  @override
+  State<BCDateField> createState() => _BCDateFieldState();
+}
+
+class _BCDateFieldState extends State<BCDateField> {
+  final BCAnchoredOverlayController _overlay = BCAnchoredOverlayController();
+
+  @override
+  void dispose() {
+    _overlay.dispose();
+    super.dispose();
+  }
+
   DateTime get _firstDate =>
-      firstDate ?? DateTime(DateTime.now().year - 100, 1, 1);
+      widget.firstDate ?? DateTime(DateTime.now().year - 100, 1, 1);
 
   DateTime get _lastDate =>
-      lastDate ?? DateTime(DateTime.now().year + 100, 12, 31);
+      widget.lastDate ?? DateTime(DateTime.now().year + 100, 12, 31);
 
   String _format(DateTime date) {
-    if (formatDate != null) return formatDate!(date);
+    if (widget.formatDate != null) return widget.formatDate!(date);
     return '${_monthNames[date.month - 1]} ${date.day}, ${date.year}';
   }
 
-  Future<void> _open(BuildContext context) async {
-    final picked = await BCDatePickerDialog.show(
-      context,
-      initialDate: value,
+  void _commit(DateTime date) => widget.onChanged?.call(date);
+
+  Widget _calendar({required ValueChanged<DateTime> onSelected}) {
+    return BCCalendar(
+      initialDate: widget.value,
+      selectedDate: widget.value,
       firstDate: _firstDate,
       lastDate: _lastDate,
+      onDateSelected: onSelected,
     );
-    if (picked != null) onChanged?.call(picked);
+  }
+
+  Future<void> _open() async {
+    switch (widget.presentation) {
+      case BCPickerPresentation.dialog:
+        final picked = await BCDatePickerDialog.show(
+          context,
+          initialDate: widget.value,
+          firstDate: _firstDate,
+          lastDate: _lastDate,
+        );
+        if (picked != null) _commit(picked);
+      case BCPickerPresentation.popover:
+        _overlay.open();
+      case BCPickerPresentation.bottomSheet:
+        await showBCPickerSheet<void>(
+          context,
+          scrollable: true,
+          builder: (sheetContext) => _calendar(
+            onSelected: (date) {
+              Navigator.of(sheetContext).pop();
+              _commit(date);
+            },
+          ),
+        );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final bc = context.bcTheme;
+    final value = widget.value;
     final hasValue = value != null;
 
-    final side = isInvalid
+    final side = widget.isInvalid
         ? BorderSide(color: bc.danger, width: 2)
         : BorderSide.none;
 
     Widget field = Container(
       constraints: const BoxConstraints(minHeight: 48),
       decoration: ShapeDecoration(
-        color: variant == BCInputVariant.primary ? bc.field : bc.defaultColor,
+        color: widget.variant == BCInputVariant.primary
+            ? bc.field
+            : bc.defaultColor,
         shape: BCShapes.continuous(BCRadius.field, side: side),
-        shadows: variant == BCInputVariant.primary
+        shadows: widget.variant == BCInputVariant.primary
             ? bc.fieldShadow.shadows
             : null,
       ),
@@ -97,7 +149,7 @@ class BCDateField extends StatelessWidget {
         children: [
           Expanded(
             child: Text(
-              hasValue ? _format(value!) : placeholder,
+              hasValue ? _format(value) : widget.placeholder,
               style: BCTypography.textBase.copyWith(
                 color: hasValue ? bc.foreground : bc.fieldPlaceholder,
               ),
@@ -105,67 +157,81 @@ class BCDateField extends StatelessWidget {
           ),
           IconTheme.merge(
             data: IconThemeData(color: bc.muted, size: 20),
-            child: icon,
+            child: widget.icon,
           ),
         ],
       ),
     );
 
-    if (isDisabled) {
+    field = BCPressable(
+      feedback: BCPressFeedback.scale,
+      enabled: !widget.isDisabled,
+      onPressed: widget.isDisabled ? null : _open,
+      child: field,
+    );
+
+    if (widget.presentation == BCPickerPresentation.popover) {
+      field = BCAnchoredOverlay(
+        controller: _overlay,
+        matchAnchorWidth: true,
+        overlayBuilder: (overlayContext) => BCPickerPanel(
+          scrollable: true,
+          child: _calendar(
+            onSelected: (date) {
+              _overlay.close();
+              _commit(date);
+            },
+          ),
+        ),
+        child: field,
+      );
+    }
+
+    if (widget.isDisabled) {
       field = Opacity(
         opacity: bc.opacityDisabled,
         child: IgnorePointer(child: field),
       );
     }
 
-    return BCPressable(
-      feedback: BCPressFeedback.scale,
-      enabled: !isDisabled,
-      onPressed: isDisabled ? null : () => _open(context),
-      child: field,
-    );
+    return field;
   }
 }
 
-/// The calendar dialog opened by [BCDateField]. Can also be used directly:
-/// `final date = await BCDatePickerDialog.show(context, ...);`
+/// A month calendar: header with a month/year toggle and arrows, weekday
+/// row, and a swipeable grid of days.
+///
+/// This is the panel behind [BCDateField] in every presentation; use it
+/// directly to embed a calendar in a form or a sheet of your own.
 ///
 /// Months are pages: swipe the grid horizontally to move between them, or
 /// use the header arrows, which animate the same pager. The grid is always
-/// six week-rows tall so the dialog keeps a constant height.
-class BCDatePickerDialog extends StatefulWidget {
-  const BCDatePickerDialog({
+/// six week-rows tall so the surface keeps a constant height.
+class BCCalendar extends StatefulWidget {
+  const BCCalendar({
     super.key,
     this.initialDate,
+    this.selectedDate,
     required this.firstDate,
     required this.lastDate,
+    required this.onDateSelected,
   });
 
+  /// Month to open on. Defaults to [selectedDate], else today.
   final DateTime? initialDate;
+
+  /// Day drawn as selected.
+  final DateTime? selectedDate;
+
   final DateTime firstDate;
   final DateTime lastDate;
-
-  static Future<DateTime?> show(
-    BuildContext context, {
-    DateTime? initialDate,
-    required DateTime firstDate,
-    required DateTime lastDate,
-  }) {
-    return BCDialog.show<DateTime>(
-      context,
-      builder: (dialogContext) => BCDatePickerDialog(
-        initialDate: initialDate,
-        firstDate: firstDate,
-        lastDate: lastDate,
-      ),
-    );
-  }
+  final ValueChanged<DateTime> onDateSelected;
 
   @override
-  State<BCDatePickerDialog> createState() => _BCDatePickerDialogState();
+  State<BCCalendar> createState() => _BCCalendarState();
 }
 
-class _BCDatePickerDialogState extends State<BCDatePickerDialog> {
+class _BCCalendarState extends State<BCCalendar> {
   late DateTime _visibleMonth;
 
   /// Months are pages, so a horizontal drag changes month and the grid
@@ -179,8 +245,12 @@ class _BCDatePickerDialogState extends State<BCDatePickerDialog> {
   @override
   void initState() {
     super.initState();
-    final initial = _clamp(widget.initialDate ?? DateTime.now());
-    _selected = widget.initialDate == null ? null : _dateOnly(initial);
+    final initial = _clamp(
+      widget.initialDate ?? widget.selectedDate ?? DateTime.now(),
+    );
+    _selected = widget.selectedDate == null
+        ? null
+        : _dateOnly(_clamp(widget.selectedDate!));
     _visibleMonth = DateTime(initial.year, initial.month);
     _monthPage = PageController(initialPage: _monthIndex(_visibleMonth));
   }
@@ -192,7 +262,7 @@ class _BCDatePickerDialogState extends State<BCDatePickerDialog> {
     super.dispose();
   }
 
-  /// Distance in months from [BCDatePickerDialog.firstDate], which is page 0.
+  /// Distance in months from [BCCalendar.firstDate], which is page 0.
   int _monthIndex(DateTime month) =>
       (month.year - widget.firstDate.year) * 12 +
       (month.month - widget.firstDate.month);
@@ -269,32 +339,24 @@ class _BCDatePickerDialogState extends State<BCDatePickerDialog> {
 
   void _selectDay(DateTime day) {
     setState(() => _selected = day);
-    Navigator.of(context).pop(day);
+    widget.onDateSelected(day);
   }
 
   @override
   Widget build(BuildContext context) {
-    // Fit within the screen: the dialog adds 20px outer margins, so cap the
-    // card so it never overflows on narrow phones.
-    final maxCardWidth = MediaQuery.sizeOf(context).width - 40;
-    final width = maxCardWidth < 340 ? maxCardWidth : 340.0;
-
-    return BCDialogContent(
-      width: width,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _header(context),
-          const SizedBox(height: 12),
-          if (_yearView)
-            _yearGrid(context)
-          else ...[
-            _weekdayRow(context),
-            const SizedBox(height: 4),
-            _dayGrid(context),
-          ],
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _header(context),
+        const SizedBox(height: 12),
+        if (_yearView)
+          _yearGrid(context)
+        else ...[
+          _weekdayRow(context),
+          const SizedBox(height: 4),
+          _dayGrid(context),
         ],
-      ),
+      ],
     );
   }
 
@@ -568,6 +630,56 @@ class _BCDatePickerDialogState extends State<BCDatePickerDialog> {
             fontWeight: isSelected ? BCTypography.medium : null,
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// The calendar in a modal dialog. Kept as a standalone entry point:
+/// `final date = await BCDatePickerDialog.show(context, ...);`
+class BCDatePickerDialog extends StatelessWidget {
+  const BCDatePickerDialog({
+    super.key,
+    this.initialDate,
+    required this.firstDate,
+    required this.lastDate,
+  });
+
+  final DateTime? initialDate;
+  final DateTime firstDate;
+  final DateTime lastDate;
+
+  static Future<DateTime?> show(
+    BuildContext context, {
+    DateTime? initialDate,
+    required DateTime firstDate,
+    required DateTime lastDate,
+  }) {
+    return BCDialog.show<DateTime>(
+      context,
+      builder: (dialogContext) => BCDatePickerDialog(
+        initialDate: initialDate,
+        firstDate: firstDate,
+        lastDate: lastDate,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Fit within the screen: the dialog adds 20px outer margins, so cap the
+    // card so it never overflows on narrow phones.
+    final maxCardWidth = MediaQuery.sizeOf(context).width - 40;
+    final width = maxCardWidth < 340 ? maxCardWidth : 340.0;
+
+    return BCDialogContent(
+      width: width,
+      child: BCCalendar(
+        initialDate: initialDate,
+        selectedDate: initialDate,
+        firstDate: firstDate,
+        lastDate: lastDate,
+        onDateSelected: (date) => Navigator.of(context).pop(date),
       ),
     );
   }

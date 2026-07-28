@@ -157,7 +157,8 @@ CATALOG = [
     ('Forms', [
         'BCInput', 'BCTextField', 'BCTextArea', 'BCPasswordInput',
         'BCSearchField', 'BCInputOTP', 'BCDateField', 'BCTimeField',
-        'BCDateTimePicker', 'BCDateTimeWheel', 'BCSelect', 'BCControlField',
+        'BCDateTimePicker', 'BCDateTimeWheel', 'BCCalendar', 'BCTimeWheel',
+        'BCSelect', 'BCControlField',
     ]),
     ('Selection', [
         'BCCheckbox', 'BCRadioGroup', 'BCSwitch', 'BCSlider', 'BCRangeSlider',
@@ -207,8 +208,10 @@ SUMMARY = {
     'BCPasswordInput': 'Input with a reveal toggle.',
     'BCSearchField': 'Input with a search icon and a clear button.',
     'BCInputOTP': 'One-time-code field composed of slots, with a caret and separators.',
-    'BCDateField': 'Read-only field that opens a date picker dialog. Months change by swiping the calendar grid or with the header arrows.',
-    'BCTimeField': 'Read-only field that opens a time picker dialog.',
+    'BCDateField': 'Read-only field that opens a calendar in a dialog, a popover or a bottom sheet (`presentation`). Months change by swiping the grid or with the header arrows.',
+    'BCTimeField': 'Read-only field that opens the hour/minute wheels in a dialog, a popover or a bottom sheet (`presentation`). The dialog commits on Confirm; popover and sheet apply each spin live.',
+    'BCCalendar': 'The month calendar behind `BCDateField`: header, weekday row and a swipeable six-row day grid. Usable on its own.',
+    'BCTimeWheel': 'The hour / minute (and AM/PM) wheels behind `BCTimeField`. Usable on its own.',
     'BCDateTimePicker': 'Date **and** time in one field: day, hour, minute (and AM/PM) wheels presented in a popover, a dialog or a bottom sheet, with built-in label, description and error slots.',
     'BCDateTimeWheel': 'The wheels behind `BCDateTimePicker`, usable on their own to embed day/time selection in a form or a sheet of your own.',
     'BCSelect': 'Anchored dropdown select.',
@@ -664,9 +667,9 @@ SUBPARTS = {
     'BCEmptyState': ['BCEmptyStateAvatarCluster'],
     'BCSkeleton': ['BCSkeletonGroup'],
     'BCRadioGroup': ['BCRadio'],
-    'BCDateField': ['BCDatePickerDialog'],
+    'BCDateField': ['BCDatePickerDialog', 'BCCalendar'],
     'BCDateTimePicker': ['BCDateTimeWheel'],
-    'BCTimeField': ['BCTimePickerDialog'],
+    'BCTimeField': ['BCTimePickerDialog', 'BCTimeWheel'],
     'BCControlField': ['BCLabel', 'BCDescription', 'BCFieldError'],
 }
 
@@ -772,6 +775,9 @@ w('  their state, except where a controller is explicitly provided.')
 w('- **Disabled is `isDisabled`, invalid is `isInvalid`** — never `enabled: false`.')
 w('- **Compound components** (Card, TextField, InputOTP, Dialog, Menu) are built')
 w('  from named parts you compose as children, mirroring heroui-native.')
+w('- **Pickers share one `presentation`.** `BCDateField`, `BCTimeField` and')
+w('  `BCDateTimePicker` all take a `BCPickerPresentation` — `dialog`,')
+w('  `popover` or `bottomSheet` — and behave the same way in each.')
 w('- **Continuous corners everywhere.** Radii come from `BCRadius` and are drawn')
 w('  with `BCShapes.continuous` (Apple-style squircles), not plain circles.')
 w('')
