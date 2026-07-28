@@ -3,6 +3,7 @@ import 'package:flutter/widgets.dart';
 
 import '../extensions/context_extension.dart';
 import '../theme/theme_extensions.dart';
+import '../tokens/bc_duration.dart';
 import '../tokens/bc_radius.dart';
 import '../tokens/bc_shapes.dart';
 import '../tokens/bc_typography.dart';
@@ -14,7 +15,8 @@ import 'bc_pressable.dart';
 ///
 /// Tapping the field opens [BCDatePickerDialog] — a calendar built entirely
 /// from bc_ui tokens (not Material's `showDatePicker`), so it matches the
-/// design system in light and dark.
+/// design system in light and dark. Months change by swiping the grid left
+/// or right as well as with the header arrows.
 class BCDateField extends StatelessWidget {
   const BCDateField({
     super.key,
@@ -86,8 +88,9 @@ class BCDateField extends StatelessWidget {
       decoration: ShapeDecoration(
         color: variant == BCInputVariant.primary ? bc.field : bc.defaultColor,
         shape: BCShapes.continuous(BCRadius.field, side: side),
-        shadows:
-            variant == BCInputVariant.primary ? bc.fieldShadow.shadows : null,
+        shadows: variant == BCInputVariant.primary
+            ? bc.fieldShadow.shadows
+            : null,
       ),
       padding: const EdgeInsets.symmetric(horizontal: 12),
       child: Row(
@@ -126,6 +129,10 @@ class BCDateField extends StatelessWidget {
 
 /// The calendar dialog opened by [BCDateField]. Can also be used directly:
 /// `final date = await BCDatePickerDialog.show(context, ...);`
+///
+/// Months are pages: swipe the grid horizontally to move between them, or
+/// use the header arrows, which animate the same pager. The grid is always
+/// six week-rows tall so the dialog keeps a constant height.
 class BCDatePickerDialog extends StatefulWidget {
   const BCDatePickerDialog({
     super.key,
@@ -160,6 +167,11 @@ class BCDatePickerDialog extends StatefulWidget {
 
 class _BCDatePickerDialogState extends State<BCDatePickerDialog> {
   late DateTime _visibleMonth;
+
+  /// Months are pages, so a horizontal drag changes month and the grid
+  /// follows the finger. The arrows animate this same controller.
+  late PageController _monthPage;
+
   DateTime? _selected;
   bool _yearView = false;
   ScrollController? _yearScroll;
@@ -170,13 +182,28 @@ class _BCDatePickerDialogState extends State<BCDatePickerDialog> {
     final initial = _clamp(widget.initialDate ?? DateTime.now());
     _selected = widget.initialDate == null ? null : _dateOnly(initial);
     _visibleMonth = DateTime(initial.year, initial.month);
+    _monthPage = PageController(initialPage: _monthIndex(_visibleMonth));
   }
 
   @override
   void dispose() {
+    _monthPage.dispose();
     _yearScroll?.dispose();
     super.dispose();
   }
+
+  /// Distance in months from [BCDatePickerDialog.firstDate], which is page 0.
+  int _monthIndex(DateTime month) =>
+      (month.year - widget.firstDate.year) * 12 +
+      (month.month - widget.firstDate.month);
+
+  DateTime _monthForIndex(int index) =>
+      DateTime(widget.firstDate.year, widget.firstDate.month + index);
+
+  int get _monthCount => _monthIndex(_lastMonth) + 1;
+
+  DateTime get _lastMonth =>
+      DateTime(widget.lastDate.year, widget.lastDate.month);
 
   DateTime _dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
 
@@ -193,18 +220,50 @@ class _BCDatePickerDialogState extends State<BCDatePickerDialog> {
       d.isBefore(_dateOnly(widget.firstDate)) ||
       d.isAfter(_dateOnly(widget.lastDate));
 
-  bool get _canGoPrev =>
-      DateTime(_visibleMonth.year, _visibleMonth.month)
-          .isAfter(DateTime(widget.firstDate.year, widget.firstDate.month));
+  bool get _canGoPrev => DateTime(
+    _visibleMonth.year,
+    _visibleMonth.month,
+  ).isAfter(DateTime(widget.firstDate.year, widget.firstDate.month));
 
-  bool get _canGoNext =>
-      DateTime(_visibleMonth.year, _visibleMonth.month)
-          .isBefore(DateTime(widget.lastDate.year, widget.lastDate.month));
+  bool get _canGoNext => DateTime(
+    _visibleMonth.year,
+    _visibleMonth.month,
+  ).isBefore(DateTime(widget.lastDate.year, widget.lastDate.month));
 
   void _changeMonth(int delta) {
+    final target = _monthIndex(_visibleMonth) + delta;
+    if (target < 0 || target >= _monthCount) return;
+    if (!_monthPage.hasClients) {
+      setState(() => _visibleMonth = _monthForIndex(target));
+      return;
+    }
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _monthPage.jumpToPage(target);
+      return;
+    }
+    _monthPage.animateToPage(
+      target,
+      duration: BCDuration.normal,
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  /// Fired mid-drag as the swipe crosses a page boundary, so the header title
+  /// tracks the gesture instead of waiting for it to settle.
+  void _handlePageChanged(int index) {
+    setState(() => _visibleMonth = _monthForIndex(index));
+  }
+
+  /// Leaves the year view showing [month]. The month PageView is unmounted
+  /// while the year grid is up, so its controller has no clients here and can
+  /// be swapped for one that opens on the right page — no post-frame jump.
+  void _openMonthView(DateTime month) {
+    final index = _monthIndex(month).clamp(0, _monthCount - 1);
     setState(() {
-      _visibleMonth =
-          DateTime(_visibleMonth.year, _visibleMonth.month + delta);
+      _visibleMonth = _monthForIndex(index);
+      _yearView = false;
+      _monthPage.dispose();
+      _monthPage = PageController(initialPage: index);
     });
   }
 
@@ -246,17 +305,25 @@ class _BCDatePickerDialogState extends State<BCDatePickerDialog> {
         Expanded(
           child: BCPressable(
             feedback: BCPressFeedback.scale,
-            onPressed: () => setState(() => _yearView = !_yearView),
+            onPressed: () => _yearView
+                ? _openMonthView(_visibleMonth)
+                : setState(() => _yearView = true),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               spacing: 4,
               children: [
-                Text(
-                  '${_monthNames[_visibleMonth.month - 1]} '
-                  '${_visibleMonth.year}',
-                  style: BCTypography.textBase.copyWith(
-                    color: bc.foreground,
-                    fontWeight: BCTypography.semiBold,
+                // Flexible so a long month name ellipsizes instead of
+                // overflowing the header on a narrow dialog.
+                Flexible(
+                  child: Text(
+                    '${_monthNames[_visibleMonth.month - 1]} '
+                    '${_visibleMonth.year}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: BCTypography.textBase.copyWith(
+                      color: bc.foreground,
+                      fontWeight: BCTypography.semiBold,
+                    ),
                   ),
                 ),
                 Icon(
@@ -271,11 +338,19 @@ class _BCDatePickerDialogState extends State<BCDatePickerDialog> {
           ),
         ),
         if (!_yearView) ...[
-          _navButton(context, Icons.chevron_left,
-              enabled: _canGoPrev, onPressed: () => _changeMonth(-1)),
+          _navButton(
+            context,
+            Icons.chevron_left,
+            enabled: _canGoPrev,
+            onPressed: () => _changeMonth(-1),
+          ),
           const SizedBox(width: 4),
-          _navButton(context, Icons.chevron_right,
-              enabled: _canGoNext, onPressed: () => _changeMonth(1)),
+          _navButton(
+            context,
+            Icons.chevron_right,
+            enabled: _canGoNext,
+            onPressed: () => _changeMonth(1),
+          ),
         ],
       ],
     );
@@ -330,35 +405,52 @@ class _BCDatePickerDialogState extends State<BCDatePickerDialog> {
     );
   }
 
+  /// Swipeable month pages. Always six week-rows tall so the dialog keeps a
+  /// constant height whichever month is on screen.
   Widget _dayGrid(BuildContext context) {
-    final firstOfMonth =
-        DateTime(_visibleMonth.year, _visibleMonth.month, 1);
+    return AspectRatio(
+      aspectRatio: 7 / 6,
+      child: PageView.builder(
+        controller: _monthPage,
+        itemCount: _monthCount,
+        onPageChanged: _handlePageChanged,
+        physics: _monthCount > 1
+            ? const PageScrollPhysics()
+            : const NeverScrollableScrollPhysics(),
+        itemBuilder: (context, index) =>
+            _monthPageView(context, _monthForIndex(index)),
+      ),
+    );
+  }
+
+  Widget _monthPageView(BuildContext context, DateTime month) {
+    final firstOfMonth = DateTime(month.year, month.month, 1);
     // Leading blanks so the 1st lands under its weekday (Sunday start).
     final leading = firstOfMonth.weekday % 7;
-    final daysInMonth =
-        DateTime(_visibleMonth.year, _visibleMonth.month + 1, 0).day;
+    final daysInMonth = DateTime(month.year, month.month + 1, 0).day;
 
     final cells = <Widget>[];
     for (var i = 0; i < leading; i++) {
       cells.add(const Expanded(child: SizedBox.shrink()));
     }
     for (var day = 1; day <= daysInMonth; day++) {
-      cells.add(Expanded(
-        child: _dayCell(
-          context,
-          DateTime(_visibleMonth.year, _visibleMonth.month, day),
+      cells.add(
+        Expanded(
+          child: _dayCell(context, DateTime(month.year, month.month, day)),
         ),
-      ));
+      );
     }
-    while (cells.length % 7 != 0) {
+    // Pad to a full six rows: 42 cells.
+    while (cells.length < 42) {
       cells.add(const Expanded(child: SizedBox.shrink()));
     }
 
-    final rows = <Widget>[];
-    for (var i = 0; i < cells.length; i += 7) {
-      rows.add(Row(children: cells.sublist(i, i + 7)));
-    }
-    return Column(mainAxisSize: MainAxisSize.min, children: rows);
+    return Column(
+      children: [
+        for (var i = 0; i < 42; i += 7)
+          Expanded(child: Row(children: cells.sublist(i, i + 7))),
+      ],
+    );
   }
 
   Widget _dayCell(BuildContext context, DateTime day) {
@@ -380,28 +472,24 @@ class _BCDatePickerDialogState extends State<BCDatePickerDialog> {
 
     final shape = BCShapes.continuous(BCRadius.xl);
 
-    Widget cell = AspectRatio(
-      aspectRatio: 1,
-      child: Padding(
-        padding: const EdgeInsets.all(2),
-        child: DecoratedBox(
-          decoration: ShapeDecoration(
-            color: isSelected ? bc.accent : const Color(0x00000000),
-            shape: isToday && !isSelected
-                ? BCShapes.continuous(
-                    BCRadius.xl,
-                    side: BorderSide(color: bc.accent),
-                  )
-                : shape,
-          ),
-          child: Center(
-            child: Text(
-              '${day.day}',
-              style: BCTypography.textSm.copyWith(
-                color: textColor,
-                fontWeight:
-                    isSelected || isToday ? BCTypography.medium : null,
-              ),
+    Widget cell = Padding(
+      padding: const EdgeInsets.all(2),
+      child: DecoratedBox(
+        decoration: ShapeDecoration(
+          color: isSelected ? bc.accent : const Color(0x00000000),
+          shape: isToday && !isSelected
+              ? BCShapes.continuous(
+                  BCRadius.xl,
+                  side: BorderSide(color: bc.accent),
+                )
+              : shape,
+        ),
+        child: Center(
+          child: Text(
+            '${day.day}',
+            style: BCTypography.textSm.copyWith(
+              color: textColor,
+              fontWeight: isSelected || isToday ? BCTypography.medium : null,
             ),
           ),
         ),
@@ -443,8 +531,12 @@ class _BCDatePickerDialogState extends State<BCDatePickerDialog> {
         controller: _yearScroll,
         children: [
           for (final year in years)
-            _yearCell(context, year, isSelected: year == _visibleMonth.year,
-                bc: bc),
+            _yearCell(
+              context,
+              year,
+              isSelected: year == _visibleMonth.year,
+              bc: bc,
+            ),
         ],
       ),
     );
@@ -467,12 +559,7 @@ class _BCDatePickerDialogState extends State<BCDatePickerDialog> {
               decoration: ShapeDecoration(color: bc.accent, shape: shape),
             )
           : null,
-      onPressed: () {
-        setState(() {
-          _visibleMonth = DateTime(year, _visibleMonth.month);
-          _yearView = false;
-        });
-      },
+      onPressed: () => _openMonthView(DateTime(year, _visibleMonth.month)),
       child: Center(
         child: Text(
           '$year',

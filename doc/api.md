@@ -1497,7 +1497,7 @@ BCInputOTP(
 
 ### BCDateField
 
-Read-only field that opens a date picker dialog.
+Read-only field that opens a date picker dialog. Months change by swiping the calendar grid or with the header arrows.
 
 | Prop | Type | Default | Notes |
 |---|---|---|---|
@@ -1516,7 +1516,7 @@ Read-only field that opens a date picker dialog.
 
 <details><summary><code>BCDatePickerDialog</code></summary>
 
-The calendar dialog opened by `BCDateField`. Can also be used directly: `final date = await BCDatePickerDialog.show(context, ...);`
+The calendar dialog opened by `BCDateField`. Can also be used directly: `final date = await BCDatePickerDialog.show(context, ...);`  Months are pages: swipe the grid horizontally to move between them, or use the header arrows, which animate the same pager. The grid is always six week-rows tall so the dialog keeps a constant height.
 
 | Prop | Type | Default | Notes |
 |---|---|---|---|

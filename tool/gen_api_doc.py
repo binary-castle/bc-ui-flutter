@@ -207,7 +207,7 @@ SUMMARY = {
     'BCPasswordInput': 'Input with a reveal toggle.',
     'BCSearchField': 'Input with a search icon and a clear button.',
     'BCInputOTP': 'One-time-code field composed of slots, with a caret and separators.',
-    'BCDateField': 'Read-only field that opens a date picker dialog.',
+    'BCDateField': 'Read-only field that opens a date picker dialog. Months change by swiping the calendar grid or with the header arrows.',
     'BCTimeField': 'Read-only field that opens a time picker dialog.',
     'BCSelect': 'Anchored dropdown select.',
     'BCControlField': 'Row that pairs a control (switch, checkbox, radio) with a label and description.',

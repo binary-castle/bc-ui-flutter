@@ -304,6 +304,114 @@ void main() {
     });
   });
 
+  group('BCDatePickerDialog month paging', () {
+    Future<void> openPicker(
+      WidgetTester tester, {
+      DateTime? initial,
+      DateTime? first,
+      DateTime? last,
+    }) async {
+      await tester.pumpWidget(
+        _app(
+          BCDateField(
+            value: initial ?? DateTime(2026, 7, 15),
+            firstDate: first ?? DateTime(2020, 1, 1),
+            lastDate: last ?? DateTime(2030, 12, 31),
+            onChanged: (_) {},
+          ),
+        ),
+      );
+      await tester.tap(find.byType(BCDateField));
+      await tester.pumpAndSettle();
+    }
+
+    Future<void> swipe(WidgetTester tester, double dx) async {
+      await tester.drag(find.byType(PageView), Offset(dx, 0));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('swiping left and right changes the visible month',
+        (tester) async {
+      await openPicker(tester);
+      expect(find.text('July 2026'), findsOneWidget);
+
+      await swipe(tester, -400); // drag left → next month
+      expect(find.text('August 2026'), findsOneWidget);
+
+      await swipe(tester, 400); // drag right → back
+      expect(find.text('July 2026'), findsOneWidget);
+
+      await swipe(tester, 400); // and again → previous month
+      expect(find.text('June 2026'), findsOneWidget);
+    });
+
+    testWidgets('swiping shows that month\'s days', (tester) async {
+      await openPicker(tester, initial: DateTime(2026, 2, 10));
+      expect(find.text('February 2026'), findsOneWidget);
+      // February 2026 has 28 days; March has 31.
+      expect(find.text('30'), findsNothing);
+
+      await swipe(tester, -400);
+      expect(find.text('March 2026'), findsOneWidget);
+      expect(find.text('30'), findsOneWidget);
+    });
+
+    testWidgets('arrow buttons drive the same pager', (tester) async {
+      await openPicker(tester);
+
+      await tester.tap(find.byIcon(Icons.chevron_right));
+      await tester.pumpAndSettle();
+      expect(find.text('August 2026'), findsOneWidget);
+
+      await tester.tap(find.byIcon(Icons.chevron_left));
+      await tester.pumpAndSettle();
+      expect(find.text('July 2026'), findsOneWidget);
+    });
+
+    testWidgets('cannot swipe past firstDate or lastDate', (tester) async {
+      await openPicker(
+        tester,
+        initial: DateTime(2026, 7, 15),
+        first: DateTime(2026, 6, 1),
+        last: DateTime(2026, 8, 31),
+      );
+
+      await swipe(tester, 400);
+      expect(find.text('June 2026'), findsOneWidget);
+      await swipe(tester, 400); // already at the first month
+      expect(find.text('June 2026'), findsOneWidget);
+
+      await swipe(tester, -400);
+      await swipe(tester, -400);
+      expect(find.text('August 2026'), findsOneWidget);
+      await swipe(tester, -400); // already at the last month
+      expect(find.text('August 2026'), findsOneWidget);
+    });
+
+    testWidgets('picking a year opens the month view on it', (tester) async {
+      await openPicker(tester);
+
+      await tester.tap(find.text('July 2026'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('2028'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('July 2028'), findsOneWidget);
+
+      // The pager was rebuilt around the new month, so swiping still works.
+      await swipe(tester, -400);
+      expect(find.text('August 2028'), findsOneWidget);
+    });
+
+    testWidgets('grid height stays constant across months', (tester) async {
+      await openPicker(tester, initial: DateTime(2026, 2, 10));
+      final february = tester.getSize(find.byType(PageView));
+
+      await swipe(tester, -400); // March 2026 needs an extra week row
+      expect(tester.getSize(find.byType(PageView)), february);
+    });
+  });
+
   group('BCTimeField', () {
     testWidgets('opens the wheel picker and confirms a time', (tester) async {
       TimeOfDay? picked;
