@@ -1,11 +1,10 @@
-import 'package:flutter/material.dart' show Icons, Material, MaterialType;
+import 'package:flutter/material.dart' show Icons, showModalBottomSheet;
 import 'package:flutter/widgets.dart';
 
 import '../extensions/context_extension.dart';
 import '../overlay/bc_overlay_anchor.dart';
 import '../theme/theme_extensions.dart';
 import '../tokens/bc_duration.dart';
-import '../tokens/bc_motion.dart';
 import '../tokens/bc_radius.dart';
 import '../tokens/bc_shapes.dart';
 import '../tokens/bc_spacing.dart';
@@ -612,82 +611,58 @@ class _BCDateTimePickerState extends State<BCDateTimePicker> {
     }
   }
 
+  /// Flutter's modal sheet route, styled from bc_ui tokens. Going through
+  /// the real route is what gives drag-to-dismiss, the fling velocity and
+  /// the scrim that tracks the drag — a hand-rolled slide transition has
+  /// none of that.
   Future<void> _openSheet() {
     final bc = context.bcTheme;
 
-    return Navigator.of(context).push(
-      PageRouteBuilder<void>(
-        opaque: false,
-        barrierColor: bc.backdrop,
-        barrierDismissible: true,
-        barrierLabel: 'Dismiss',
-        transitionDuration: BCDuration.normal,
-        reverseTransitionDuration: BCDuration.fast,
-        pageBuilder: (routeContext, animation, _) {
-          // The sheet is its own route, outside any Scaffold: a transparent
-          // Material supplies the DefaultTextStyle, otherwise the wheels are
-          // drawn with Flutter's yellow "missing Material" underline.
-          return Material(
-            type: MaterialType.transparency,
-            child: Align(
-              alignment: Alignment.bottomCenter,
-              child: Padding(
-                padding: EdgeInsets.only(
-                  bottom: MediaQuery.viewPaddingOf(routeContext).bottom,
-                ),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.fromLTRB(
-                    BCSpacing.sm,
-                    BCSpacing.sm,
-                    BCSpacing.sm,
-                    BCSpacing.md,
-                  ),
-                  decoration: ShapeDecoration(
-                    color: bc.overlay,
-                    shape: BCShapes.continuousFrom(
-                      const BorderRadius.vertical(
-                        top: Radius.circular(BCRadius.xxxl),
-                      ),
-                      side: bc.overlayShadow.innerBorder ?? BorderSide.none,
-                    ),
-                    shadows: bc.overlayShadow.shadows,
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Grab handle.
-                      Container(
-                        width: 36,
-                        height: 4,
-                        margin: const EdgeInsets.only(bottom: BCSpacing.sm),
-                        decoration: ShapeDecoration(
-                          color: bc.separator,
-                          shape: BCShapes.continuous(BCRadius.full),
-                        ),
-                      ),
-                      _wheel(onChanged: _handleLiveChange),
-                    ],
-                  ),
+    return showModalBottomSheet<void>(
+      context: context,
+      // The sheet paints its own surface below, so the route's is invisible.
+      backgroundColor: const Color(0x00000000),
+      barrierColor: bc.backdrop,
+      elevation: 0,
+      isScrollControlled: true,
+      builder: (sheetContext) {
+        return Container(
+          width: double.infinity,
+          // The home-indicator inset lives *inside* the sheet: padding it
+          // from the outside would float the sheet off the bottom edge.
+          padding: EdgeInsets.fromLTRB(
+            BCSpacing.sm,
+            BCSpacing.sm,
+            BCSpacing.sm,
+            BCSpacing.sm + MediaQuery.viewPaddingOf(sheetContext).bottom,
+          ),
+          decoration: ShapeDecoration(
+            color: bc.overlay,
+            shape: BCShapes.continuousFrom(
+              const BorderRadius.vertical(top: Radius.circular(BCRadius.xxxl)),
+              side: bc.overlayShadow.innerBorder ?? BorderSide.none,
+            ),
+            shadows: bc.overlayShadow.shadows,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Grab handle. Material can draw its own, but this one uses
+              // the separator token and matches the rest of the library.
+              Container(
+                width: 36,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: BCSpacing.sm),
+                decoration: ShapeDecoration(
+                  color: bc.separator,
+                  shape: BCShapes.continuous(BCRadius.full),
                 ),
               ),
-            ),
-          );
-        },
-        transitionsBuilder: (context, animation, _, child) {
-          final curved = CurvedAnimation(
-            parent: animation,
-            curve: BCMotion.timingCurve,
-            reverseCurve: BCMotion.timingCurve,
-          );
-          return SlideTransition(
-            position: curved.drive(
-              Tween(begin: const Offset(0, 1), end: Offset.zero),
-            ),
-            child: child,
-          );
-        },
-      ),
+              _wheel(onChanged: _handleLiveChange),
+            ],
+          ),
+        );
+      },
     );
   }
 

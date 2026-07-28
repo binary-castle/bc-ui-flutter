@@ -549,10 +549,43 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(BCDateTimeWheel), findsOneWidget);
 
-      // The sheet sits against the bottom edge.
-      final sheet = tester.getRect(find.byType(BCDateTimeWheel));
+      // Flush to the bottom edge: no gap under the sheet.
+      final sheet = tester.getRect(
+        find.ancestor(
+          of: find.byType(BCDateTimeWheel),
+          matching: find.byType(Container),
+        ).last,
+      );
       final screen = tester.getSize(find.byType(MaterialApp));
-      expect(sheet.bottom, greaterThan(screen.height / 2));
+      expect(sheet.bottom, moreOrLessEquals(screen.height, epsilon: 0.5));
+    });
+
+    testWidgets('sheet drags down to dismiss', (tester) async {
+      await tester.pumpWidget(
+        picker(
+          value: DateTime(2026, 7, 26, 9),
+          presentation: BCDateTimePickerPresentation.bottomSheet,
+        ),
+      );
+
+      await tester.tap(find.byType(BCDateTimePicker));
+      await tester.pumpAndSettle();
+      expect(find.byType(BCDateTimeWheel), findsOneWidget);
+
+      // Grab the handle area, not a wheel, and fling the sheet down.
+      final sheetTop = tester.getRect(find.byType(BCDateTimeWheel)).top;
+      await tester.flingFrom(
+        Offset(tester.getSize(find.byType(MaterialApp)).width / 2, sheetTop - 12),
+        const Offset(0, 400),
+        1200,
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byType(BCDateTimeWheel),
+        findsNothing,
+        reason: 'the real sheet route dismisses on a downward fling',
+      );
     });
 
     testWidgets('selection is clamped to firstDate and lastDate',
