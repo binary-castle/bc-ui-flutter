@@ -119,6 +119,58 @@ class ToastShowcaseScreen extends StatelessWidget {
           ),
         ),
         UsageVariant(
+          title: 'Placement',
+          builder: (context) => Column(
+            spacing: 12,
+            children: [
+              BCButton(
+                variant: BCButtonVariant.secondary,
+                fullWidth: true,
+                onPressed: () => BCToast.show(
+                  context,
+                  const BCToastData(
+                    title: 'Top toast',
+                    description: 'Swipe up to dismiss.',
+                    placement: BCToastPlacement.top,
+                  ),
+                ),
+                child: const Text('Show at top'),
+              ),
+              BCButton(
+                variant: BCButtonVariant.secondary,
+                fullWidth: true,
+                onPressed: () => BCToast.show(
+                  context,
+                  const BCToastData(
+                    title: 'Bottom toast',
+                    description: 'Swipe down to dismiss.',
+                    placement: BCToastPlacement.bottom,
+                  ),
+                ),
+                child: const Text('Show at bottom'),
+              ),
+              BCButton(
+                variant: BCButtonVariant.outline,
+                fullWidth: true,
+                onPressed: () {
+                  BCToast.show(
+                    context,
+                    const BCToastData(
+                      title: 'Not swipeable',
+                      description: 'Use the close button instead.',
+                      placement: BCToastPlacement.top,
+                      isSwipeable: false,
+                      showCloseButton: true,
+                      duration: Duration.zero,
+                    ),
+                  );
+                },
+                child: const Text('Show pinned toast'),
+              ),
+            ],
+          ),
+        ),
+        UsageVariant(
           title: 'With action',
           builder: (context) => BCButton(
             onPressed: () => BCToast.show(
@@ -141,7 +193,7 @@ class ToastShowcaseScreen extends StatelessWidget {
               context,
               const BCToastData(
                 title: 'Sticky toast',
-                description: 'Stays until dismissed. Swipe down or close.',
+                description: 'Stays until dismissed. Swipe away or close.',
                 showCloseButton: true,
                 duration: Duration.zero,
               ),

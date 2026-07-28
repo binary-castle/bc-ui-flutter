@@ -2200,12 +2200,16 @@ Section label (menu.css `menu__label`): text-sm, medium, muted.
 
 ### BCToast
 
-Transient message queue; `BCToastProvider` hosts it above the app.
+Transient message queue; `BCToastProvider` hosts it above the app. Toasts stack against the top or bottom edge (`placement`, per provider or per toast) and are swiped away toward that edge — the card tracks the finger, rubber-bands the other way, and keeps its momentum when it is thrown.
 
 ```dart
-// Once, above the app:
+// Once, above the app. `placement` sets the edge every toast
+// stacks against (heroui-native's own default is top).
 MaterialApp(
-  builder: (context, child) => BCToastProvider(child: child!),
+  builder: (context, child) => BCToastProvider(
+    placement: BCToastPlacement.top,
+    child: child!,
+  ),
   home: const HomeScreen(),
 );
 
@@ -2214,6 +2218,16 @@ BCToast.show(context, const BCToastData(
   title: 'Changes saved',
   description: 'Your profile is up to date.',
   variant: BCToastVariant.success,
+));
+
+// One-off overrides: this toast comes up from the bottom and cannot
+// be swiped away.
+BCToast.show(context, const BCToastData(
+  title: 'Uploading…',
+  placement: BCToastPlacement.bottom,
+  isSwipeable: false,
+  showCloseButton: true,
+  duration: Duration.zero,
 ));
 ```
 
