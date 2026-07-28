@@ -32,6 +32,7 @@ import 'package:example/showcase/screens/select_showcase_screen.dart';
 import 'package:example/showcase/screens/separator_showcase_screen.dart';
 import 'package:example/showcase/screens/skeleton_showcase_screen.dart';
 import 'package:example/showcase/screens/slider_showcase_screen.dart';
+import 'package:example/showcase/screens/social_auth_button_showcase_screen.dart';
 import 'package:example/showcase/screens/spinner_showcase_screen.dart';
 import 'package:example/showcase/screens/surface_showcase_screen.dart';
 import 'package:example/showcase/screens/switch_showcase_screen.dart';
@@ -97,6 +98,10 @@ final List<ComponentEntry> componentRegistry = [
   ComponentEntry('Separator', (_) => const SeparatorShowcaseScreen()),
   ComponentEntry('Skeleton', (_) => const SkeletonShowcaseScreen()),
   ComponentEntry('Slider', (_) => const SliderShowcaseScreen()),
+  ComponentEntry(
+    'SocialAuthButton',
+    (_) => const SocialAuthButtonShowcaseScreen(),
+  ),
   ComponentEntry('Spinner', (_) => const SpinnerShowcaseScreen()),
   ComponentEntry('Surface', (_) => const SurfaceShowcaseScreen()),
   ComponentEntry('Switch', (_) => const SwitchShowcaseScreen()),

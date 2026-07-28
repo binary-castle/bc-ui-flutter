@@ -14,7 +14,7 @@ source, so they track the code.
 - [Conventions](#conventions)
 - [Theme and tokens](#theme-and-tokens)
 - [Navigation](#navigation) — `BCAppHeader`, `BCSliverAppHeader`, `BCHeaderIconButton`, `BCBottomNav`, `BCNavRail`, `BCNavDrawer`, `BCToolbar`, `BCTabs`, `BCTabView`
-- [Actions](#actions) — `BCButton`, `BCLinkButton`, `BCCloseButton`, `BCFab`, `BCSpeedDial`, `BCToggleButton`, `BCToggleButtonGroup`, `BCPressable`
+- [Actions](#actions) — `BCButton`, `BCSocialAuthButton`, `BCBrandLogo`, `BCLinkButton`, `BCCloseButton`, `BCFab`, `BCSpeedDial`, `BCToggleButton`, `BCToggleButtonGroup`, `BCPressable`
 - [Containers](#containers) — `BCSurface`, `BCCard`, `BCListGroup`, `BCFlipCard`, `BCScrollShadow`
 - [Data display](#data-display) — `BCText`, `BCAvatar`, `BCChip`, `BCTagGroup`, `BCSeparator`, `BCSkeleton`, `BCSpinner`, `BCProgress`, `BCLoadingOverlay`, `BCRating`, `BCEmptyState`
 - [Forms](#forms) — `BCInput`, `BCTextField`, `BCTextArea`, `BCPasswordInput`, `BCSearchField`, `BCInputOTP`, `BCDateField`, `BCTimeField`, `BCDateTimePicker`, `BCDateTimeWheel`, `BCCalendar`, `BCTimeWheel`, `BCSelect`, `BCControlField`
@@ -587,6 +587,85 @@ BCButton(
 **`BCButtonSize`** — `sm`, `md`, `lg`
 
 **`BCPressFeedback`** — `scaleHighlight`, `scaleRipple`, `scale`, `highlight`, `material`, `none`
+
+### BCSocialAuthButton
+
+Sign-in button for an identity provider — a `BCButton` with the provider's brand mark as start content, so it lines up with every other button on the screen. Ten providers ship with the package; logos are vector data, not assets.
+
+```dart
+// A stack of sign-in options: outline buttons, full width by default.
+Column(
+  spacing: 12,
+  children: [
+    BCSocialAuthButton(
+      provider: BCSocialProvider.google,
+      onPressed: signInWithGoogle,
+    ),
+    BCSocialAuthButton(
+      provider: BCSocialProvider.apple,
+      label: 'Continue with Apple',
+      isLoading: isAuthenticating, // logo -> spinner, presses blocked
+      onPressed: signInWithApple,
+    ),
+  ],
+);
+
+// Any BCButton variant and size works; on tinted variants the mark
+// goes monochrome so it does not clash with the background.
+BCSocialAuthButton(
+  provider: BCSocialProvider.microsoft,
+  variant: BCButtonVariant.primary,
+  size: BCButtonSize.lg,
+  onPressed: () {},
+);
+```
+
+| Prop | Type | Default | Notes |
+|---|---|---|---|
+| `provider` | `BCSocialProvider` | required |  |
+| `onPressed` | `VoidCallback?` | — |  |
+| `label` | `String?` | — | Defaults to the provider's name ('Google', 'GitHub', …). Pass a full phrase for the common 'Continue with X' framing. |
+| `variant` | `BCButtonVariant` | `BCButtonVariant.outline` |  |
+| `size` | `BCButtonSize` | `BCButtonSize.md` |  |
+| `logoStyle` | `BCBrandLogoStyle` | `BCBrandLogoStyle.auto` |  |
+| `isIconOnly` | `bool` | `false` | Drops the label and renders a square, logo-only button. |
+| `isLoading` | `bool` | `false` | Swaps the logo for a spinner and blocks presses while a sign-in is in flight. |
+| `isDisabled` | `bool` | `false` |  |
+| `fullWidth` | `bool` | `true` | Stretches the button to the available width — the usual layout for a stack of sign-in options. Ignored when `isIconOnly` is set. |
+| `feedback` | `BCPressFeedback` | `BCPressFeedback.scaleHighlight` |  |
+| `endContent` | `Widget?` | — |  |
+
+**`BCSocialProvider`** — `google`, `apple`, `github`, `facebook`, `microsoft`, `x`, `discord`, `slack`, `notion`, `linear`
+
+**`BCButtonVariant`** — `primary`, `secondary`, `tertiary`, `outline`, `ghost`, `danger`, `dangerSoft`
+
+**`BCButtonSize`** — `sm`, `md`, `lg`
+
+**`BCBrandLogoStyle`** — `auto`, `brand`, `monochrome`
+
+**`BCPressFeedback`** — `scaleHighlight`, `scaleRipple`, `scale`, `highlight`, `material`, `none`
+
+### BCBrandLogo
+
+A provider's brand mark painted as vector art at any size, in official colours or as a single-colour glyph. Used by `BCSocialAuthButton`; usable on its own for account rows and settings.
+
+```dart
+const BCBrandLogo(provider: BCSocialProvider.github, size: 24);
+
+// Single-colour glyph instead of the brand colours.
+BCBrandLogo(
+  provider: BCSocialProvider.slack,
+  color: context.bcTheme.foreground,
+);
+```
+
+| Prop | Type | Default | Notes |
+|---|---|---|---|
+| `provider` | `BCSocialProvider` | required |  |
+| `size` | `double` | `20` | Side of the square the mark is fitted into, preserving its aspect ratio. |
+| `color` | `Color?` | — | Paints the mark as a single-colour glyph.  When null the official brand colours are used; providers whose mark is monochrome by design (`BCSocialProvider.hasMonochromeMark`) fall back to the theme foreground so they stay legible in dark mode. |
+
+**`BCSocialProvider`** — `google`, `apple`, `github`, `facebook`, `microsoft`, `x`, `discord`, `slack`, `notion`, `linear`
 
 ### BCLinkButton
 
@@ -1200,7 +1279,7 @@ BCLoadingOverlay(
 | `blockInput` | `bool` | `true` | Swallows pointer events aimed at `child` while loading. |
 | `semanticLabel` | `String` | `'Loading'` |  |
 
-**`BCLoadingBackdrop`** — `dim`, `blur`
+**`BCLoadingBackdrop`** — `dim`, `blur`, `none`
 
 ### BCRating
 
@@ -2153,8 +2232,12 @@ BCToast.show(context, const BCToastData(
 | `onAction` | `VoidCallback?` | — |  |
 | `showCloseButton` | `bool` | `false` |  |
 | `duration` | `Duration` | `const Duration(seconds: 4)` | Auto-dismiss delay; `Duration.zero` keeps the toast until dismissed. |
+| `placement` | `BCToastPlacement?` | — | Overrides `BCToastProvider.placement` for this toast. |
+| `isSwipeable` | `bool?` | — | Overrides `BCToastProvider.isSwipeable` for this toast. |
 
 **`BCToastVariant`** — `defaultVariant`, `accent`, `success`, `warning`, `danger`
+
+**`BCToastPlacement`** — `top`, `bottom`
 
 </details>
 
@@ -2164,7 +2247,13 @@ BCToast.show(context, const BCToastData(
 |---|---|---|---|
 | `child` | `Widget` | required |  |
 | `maxVisible` | `int` | `3` | Older toasts beyond this count are dismissed immediately. |
-| `bottomInset` | `double` | `16` | Distance from the bottom safe area to the front toast. |
+| `placement` | `BCToastPlacement` | `BCToastPlacement.bottom` | Edge toasts stack against unless `BCToastData.placement` says otherwise.  Defaults to `BCToastPlacement.bottom`; heroui-native's own default is `top`, so pass `BCToastPlacement.top` to match it exactly. |
+| `topInset` | `double` | `16` | Distance from the top safe area to a `BCToastPlacement.top` toast. |
+| `bottomInset` | `double` | `16` | Distance from the bottom safe area to a `BCToastPlacement.bottom` toast. |
+| `horizontalInset` | `double` | `16` | Distance from the left and right edges. |
+| `isSwipeable` | `bool` | `true` | Whether toasts can be swiped away, unless `BCToastData.isSwipeable` says otherwise. |
+
+**`BCToastPlacement`** — `top`, `bottom`
 
 </details>
 
