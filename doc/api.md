@@ -2121,12 +2121,16 @@ Section label (menu.css `menu__label`): text-sm, medium, muted.
 
 ### BCToast
 
-Transient message queue; `BCToastProvider` hosts it above the app.
+Transient message queue; `BCToastProvider` hosts it above the app. Toasts stack against the top or bottom edge (`placement`, per provider or per toast) and are swiped away toward that edge — the card tracks the finger, rubber-bands the other way, and keeps its momentum when it is thrown.
 
 ```dart
-// Once, above the app:
+// Once, above the app. `placement` sets the edge every toast
+// stacks against (heroui-native's own default is top).
 MaterialApp(
-  builder: (context, child) => BCToastProvider(child: child!),
+  builder: (context, child) => BCToastProvider(
+    placement: BCToastPlacement.top,
+    child: child!,
+  ),
   home: const HomeScreen(),
 );
 
@@ -2135,6 +2139,16 @@ BCToast.show(context, const BCToastData(
   title: 'Changes saved',
   description: 'Your profile is up to date.',
   variant: BCToastVariant.success,
+));
+
+// One-off overrides: this toast comes up from the bottom and cannot
+// be swiped away.
+BCToast.show(context, const BCToastData(
+  title: 'Uploading…',
+  placement: BCToastPlacement.bottom,
+  isSwipeable: false,
+  showCloseButton: true,
+  duration: Duration.zero,
 ));
 ```
 
@@ -2153,8 +2167,12 @@ BCToast.show(context, const BCToastData(
 | `onAction` | `VoidCallback?` | — |  |
 | `showCloseButton` | `bool` | `false` |  |
 | `duration` | `Duration` | `const Duration(seconds: 4)` | Auto-dismiss delay; `Duration.zero` keeps the toast until dismissed. |
+| `placement` | `BCToastPlacement?` | — | Overrides `BCToastProvider.placement` for this toast. |
+| `isSwipeable` | `bool?` | — | Overrides `BCToastProvider.isSwipeable` for this toast. |
 
 **`BCToastVariant`** — `defaultVariant`, `accent`, `success`, `warning`, `danger`
+
+**`BCToastPlacement`** — `top`, `bottom`
 
 </details>
 
@@ -2164,7 +2182,13 @@ BCToast.show(context, const BCToastData(
 |---|---|---|---|
 | `child` | `Widget` | required |  |
 | `maxVisible` | `int` | `3` | Older toasts beyond this count are dismissed immediately. |
-| `bottomInset` | `double` | `16` | Distance from the bottom safe area to the front toast. |
+| `placement` | `BCToastPlacement` | `BCToastPlacement.bottom` | Edge toasts stack against unless `BCToastData.placement` says otherwise.  Defaults to `BCToastPlacement.bottom`; heroui-native's own default is `top`, so pass `BCToastPlacement.top` to match it exactly. |
+| `topInset` | `double` | `16` | Distance from the top safe area to a `BCToastPlacement.top` toast. |
+| `bottomInset` | `double` | `16` | Distance from the bottom safe area to a `BCToastPlacement.bottom` toast. |
+| `horizontalInset` | `double` | `16` | Distance from the left and right edges. |
+| `isSwipeable` | `bool` | `true` | Whether toasts can be swiped away, unless `BCToastData.isSwipeable` says otherwise. |
+
+**`BCToastPlacement`** — `top`, `bottom`
 
 </details>
 

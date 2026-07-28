@@ -95,6 +95,159 @@ void main() {
     });
   });
 
+  group('BCToast placement & swipe', () {
+    /// Shows a persistent toast and settles the entrance spring.
+    Future<void> showSettled(
+      WidgetTester tester, {
+      BCToastPlacement providerPlacement = BCToastPlacement.bottom,
+      BCToastPlacement? toastPlacement,
+      bool isSwipeable = true,
+    }) async {
+      late BuildContext appContext;
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: BCTheme.light(),
+          builder: (context, child) => BCToastProvider(
+            placement: providerPlacement,
+            isSwipeable: isSwipeable,
+            child: child!,
+          ),
+          home: Scaffold(
+            body: Builder(
+              builder: (context) {
+                appContext = context;
+                return const SizedBox();
+              },
+            ),
+          ),
+        ),
+      );
+
+      BCToast.show(
+        appContext,
+        BCToastData(
+          title: 'Swipe me',
+          placement: toastPlacement,
+          duration: Duration.zero,
+        ),
+      );
+      // The entrance spring is underdamped; 3s puts it within a pixel of rest.
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 3));
+    }
+
+    testWidgets('top placement anchors the stack to the top edge',
+        (tester) async {
+      await showSettled(tester, providerPlacement: BCToastPlacement.top);
+      final screenHeight = tester.getSize(find.byType(MaterialApp)).height;
+      expect(tester.getCenter(find.text('Swipe me')).dy,
+          lessThan(screenHeight / 2));
+    });
+
+    testWidgets('bottom placement anchors the stack to the bottom edge',
+        (tester) async {
+      await showSettled(tester, providerPlacement: BCToastPlacement.bottom);
+      final screenHeight = tester.getSize(find.byType(MaterialApp)).height;
+      expect(tester.getCenter(find.text('Swipe me')).dy,
+          greaterThan(screenHeight / 2));
+    });
+
+    testWidgets('per-toast placement overrides the provider', (tester) async {
+      await showSettled(
+        tester,
+        providerPlacement: BCToastPlacement.bottom,
+        toastPlacement: BCToastPlacement.top,
+      );
+      final screenHeight = tester.getSize(find.byType(MaterialApp)).height;
+      expect(tester.getCenter(find.text('Swipe me')).dy,
+          lessThan(screenHeight / 2));
+    });
+
+    testWidgets('the card tracks the finger and snaps back below threshold',
+        (tester) async {
+      await showSettled(tester);
+      final start = tester.getCenter(find.text('Swipe me'));
+
+      final gesture = await tester.startGesture(start);
+      await gesture.moveBy(const Offset(0, 30));
+      await tester.pump();
+      // Moves with the finger rather than waiting for the release.
+      expect(tester.getCenter(find.text('Swipe me')).dy - start.dy,
+          closeTo(30, 2));
+
+      await gesture.up();
+      await tester.pumpAndSettle();
+      expect(find.text('Swipe me'), findsOneWidget);
+      expect(tester.getCenter(find.text('Swipe me')).dy, closeTo(start.dy, 2));
+    });
+
+    testWidgets('dragging away from the edge is rubber-banded',
+        (tester) async {
+      await showSettled(tester);
+      final start = tester.getCenter(find.text('Swipe me'));
+
+      final gesture = await tester.startGesture(start);
+      await gesture.moveBy(const Offset(0, -400));
+      await tester.pump();
+      // A 400px pull gives well under the 40px rubber-band cap.
+      final travel = start.dy - tester.getCenter(find.text('Swipe me')).dy;
+      expect(travel, greaterThan(0));
+      expect(travel, lessThanOrEqualTo(40));
+
+      await gesture.up();
+      await tester.pumpAndSettle();
+      expect(find.text('Swipe me'), findsOneWidget);
+    });
+
+    testWidgets('swiping toward the edge dismisses', (tester) async {
+      await showSettled(tester, providerPlacement: BCToastPlacement.bottom);
+      final start = tester.getCenter(find.text('Swipe me'));
+
+      final gesture = await tester.startGesture(start);
+      await gesture.moveBy(const Offset(0, 80));
+      await tester.pump();
+      await gesture.up();
+      await tester.pumpAndSettle();
+      expect(find.text('Swipe me'), findsNothing);
+    });
+
+    testWidgets('a top toast leaves upwards, not downwards', (tester) async {
+      await showSettled(tester, providerPlacement: BCToastPlacement.top);
+      final start = tester.getCenter(find.text('Swipe me'));
+
+      // Downwards is the rubber-band direction for a top toast.
+      final down = await tester.startGesture(start);
+      await down.moveBy(const Offset(0, 120));
+      await tester.pump();
+      await down.up();
+      await tester.pumpAndSettle();
+      expect(find.text('Swipe me'), findsOneWidget);
+
+      final up = await tester.startGesture(
+        tester.getCenter(find.text('Swipe me')),
+      );
+      await up.moveBy(const Offset(0, -120));
+      await tester.pump();
+      await up.up();
+      await tester.pumpAndSettle();
+      expect(find.text('Swipe me'), findsNothing);
+    });
+
+    testWidgets('isSwipeable false keeps the toast put', (tester) async {
+      await showSettled(tester, isSwipeable: false);
+      final start = tester.getCenter(find.text('Swipe me'));
+
+      final gesture = await tester.startGesture(start);
+      await gesture.moveBy(const Offset(0, 200));
+      await tester.pump();
+      expect(tester.getCenter(find.text('Swipe me')).dy, closeTo(start.dy, 2));
+
+      await gesture.up();
+      await tester.pumpAndSettle();
+      expect(find.text('Swipe me'), findsOneWidget);
+    });
+  });
+
   group('BCMenu viewport clamping', () {
     Future<void> expectMenuOnScreen(
       WidgetTester tester,
@@ -1233,7 +1386,7 @@ void main() {
       expect(contentIndex, greaterThan(highlightIndex));
 
       await gesture.up();
-      await tester.pump(const Duration(milliseconds: 600));
+      await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
     });
 

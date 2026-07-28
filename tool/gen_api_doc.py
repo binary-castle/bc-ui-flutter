@@ -223,7 +223,7 @@ SUMMARY = {
     'BCDialog': 'Modal dialog (static `show`, plus content/title/description parts).',
     'BCPopover': 'Anchored popover that flips and clamps to stay on screen.',
     'BCMenu': 'Anchored menu with items, labels, separators and a danger variant.',
-    'BCToast': 'Transient message queue; `BCToastProvider` hosts it above the app.',
+    'BCToast': 'Transient message queue; `BCToastProvider` hosts it above the app. Toasts stack against the top or bottom edge (`placement`, per provider or per toast) and are swiped away toward that edge — the card tracks the finger, rubber-bands the other way, and keeps its momentum when it is thrown.',
 }
 
 EXAMPLES = {
@@ -603,9 +603,13 @@ BCDateTimePicker(
     ),
   ],
 );''',
-    'BCToast': '''// Once, above the app:
+    'BCToast': '''// Once, above the app. `placement` sets the edge every toast
+// stacks against (heroui-native's own default is top).
 MaterialApp(
-  builder: (context, child) => BCToastProvider(child: child!),
+  builder: (context, child) => BCToastProvider(
+    placement: BCToastPlacement.top,
+    child: child!,
+  ),
   home: const HomeScreen(),
 );
 
@@ -614,6 +618,16 @@ BCToast.show(context, const BCToastData(
   title: 'Changes saved',
   description: 'Your profile is up to date.',
   variant: BCToastVariant.success,
+));
+
+// One-off overrides: this toast comes up from the bottom and cannot
+// be swiped away.
+BCToast.show(context, const BCToastData(
+  title: 'Uploading…',
+  placement: BCToastPlacement.bottom,
+  isSwipeable: false,
+  showCloseButton: true,
+  duration: Duration.zero,
 ));''',
 }
 
