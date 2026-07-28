@@ -8,6 +8,7 @@ export 'bc_chip.dart';
 export 'bc_close_button.dart';
 export 'bc_control_field.dart';
 export 'bc_date_field.dart';
+export 'bc_date_time_picker.dart';
 export 'bc_dialog.dart';
 export 'bc_empty_state.dart';
 export 'bc_fab.dart';

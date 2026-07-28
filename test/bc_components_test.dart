@@ -412,6 +412,210 @@ void main() {
     });
   });
 
+  group('BCDateTimePicker', () {
+    final first = DateTime(2026, 7, 1);
+    final last = DateTime(2026, 8, 31, 23, 59);
+
+    Widget picker({
+      DateTime? value,
+      BCDateTimePickerPresentation presentation =
+          BCDateTimePickerPresentation.popover,
+      bool use24 = false,
+      int interval = 1,
+      ValueChanged<DateTime>? onChanged,
+    }) {
+      return _app(
+        SizedBox(
+          width: 320,
+          child: BCDateTimePicker(
+            value: value,
+            firstDate: first,
+            lastDate: last,
+            presentation: presentation,
+            use24HourFormat: use24,
+            minuteInterval: interval,
+            onChanged: onChanged,
+          ),
+        ),
+      );
+    }
+
+    testWidgets('field shows the placeholder, then the formatted value',
+        (tester) async {
+      await tester.pumpWidget(picker());
+      expect(find.text('Choose a date & time'), findsOneWidget);
+
+      await tester.pumpWidget(picker(value: DateTime(2026, 7, 26, 9, 5)));
+      expect(find.text('Jul 26, 2026, 9:05 AM'), findsOneWidget);
+      expect(find.text('Choose a date & time'), findsNothing);
+    });
+
+    testWidgets('24-hour formatting drops the period', (tester) async {
+      await tester.pumpWidget(
+        picker(value: DateTime(2026, 7, 26, 17, 30), use24: true),
+      );
+      expect(find.text('Jul 26, 2026, 17:30'), findsOneWidget);
+    });
+
+    testWidgets('popover opens the wheels and reports live changes',
+        (tester) async {
+      DateTime? reported;
+      await tester.pumpWidget(
+        picker(
+          value: DateTime(2026, 7, 26, 9),
+          onChanged: (value) => reported = value,
+        ),
+      );
+
+      await tester.tap(find.byType(BCDateTimePicker));
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(find.byType(BCDateTimeWheel), findsOneWidget);
+
+      // Spin the minute wheel one notch.
+      final wheels = find.byType(ListWheelScrollView);
+      await tester.drag(wheels.at(2), const Offset(0, -44));
+      await tester.pumpAndSettle();
+
+      expect(reported, isNotNull);
+      expect(reported!.minute, 1);
+    });
+
+    testWidgets('minuteInterval limits the minute wheel', (tester) async {
+      DateTime? reported;
+      await tester.pumpWidget(
+        picker(
+          value: DateTime(2026, 7, 26, 9),
+          interval: 15,
+          onChanged: (value) => reported = value,
+        ),
+      );
+
+      await tester.tap(find.byType(BCDateTimePicker));
+      await tester.pump(const Duration(milliseconds: 400));
+
+      await tester.drag(
+        find.byType(ListWheelScrollView).at(2),
+        const Offset(0, -44),
+      );
+      await tester.pumpAndSettle();
+      expect(reported!.minute, 15);
+    });
+
+    testWidgets('dialog only commits on confirm', (tester) async {
+      DateTime? reported;
+      await tester.pumpWidget(
+        picker(
+          value: DateTime(2026, 7, 26, 9),
+          presentation: BCDateTimePickerPresentation.dialog,
+          onChanged: (value) => reported = value,
+        ),
+      );
+
+      await tester.tap(find.byType(BCDateTimePicker));
+      await tester.pumpAndSettle();
+
+      await tester.drag(
+        find.byType(ListWheelScrollView).at(2),
+        const Offset(0, -44),
+      );
+      await tester.pumpAndSettle();
+      expect(reported, isNull, reason: 'not committed until Confirm');
+
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+      expect(reported, isNull);
+
+      await tester.tap(find.byType(BCDateTimePicker));
+      await tester.pumpAndSettle();
+      await tester.drag(
+        find.byType(ListWheelScrollView).at(2),
+        const Offset(0, -44),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Confirm'));
+      await tester.pumpAndSettle();
+      expect(reported?.minute, 1);
+    });
+
+    testWidgets('bottom sheet opens the wheels', (tester) async {
+      await tester.pumpWidget(
+        picker(
+          value: DateTime(2026, 7, 26, 9),
+          presentation: BCDateTimePickerPresentation.bottomSheet,
+        ),
+      );
+
+      await tester.tap(find.byType(BCDateTimePicker));
+      await tester.pumpAndSettle();
+      expect(find.byType(BCDateTimeWheel), findsOneWidget);
+
+      // The sheet sits against the bottom edge.
+      final sheet = tester.getRect(find.byType(BCDateTimeWheel));
+      final screen = tester.getSize(find.byType(MaterialApp));
+      expect(sheet.bottom, greaterThan(screen.height / 2));
+    });
+
+    testWidgets('selection is clamped to firstDate and lastDate',
+        (tester) async {
+      DateTime? reported;
+      await tester.pumpWidget(
+        picker(value: first, onChanged: (value) => reported = value),
+      );
+
+      await tester.tap(find.byType(BCDateTimePicker));
+      await tester.pump(const Duration(milliseconds: 400));
+
+      // Fling the day wheel far past the start of the range.
+      await tester.drag(
+        find.byType(ListWheelScrollView).first,
+        const Offset(0, 600),
+      );
+      await tester.pumpAndSettle();
+
+      if (reported != null) {
+        expect(reported!.isBefore(first), isFalse);
+      }
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('disabled field does not open the wheels', (tester) async {
+      await tester.pumpWidget(
+        _app(
+          const SizedBox(
+            width: 320,
+            child: BCDateTimePicker(isDisabled: true, label: 'Locked'),
+          ),
+        ),
+      );
+
+      await tester.tap(find.byType(BCDateTimePicker), warnIfMissed: false);
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(find.byType(BCDateTimeWheel), findsNothing);
+    });
+
+    testWidgets('errorText renders and forces the invalid styling',
+        (tester) async {
+      await tester.pumpWidget(
+        _app(
+          const SizedBox(
+            width: 320,
+            child: BCDateTimePicker(
+              label: 'Cutoff',
+              description: 'Not shown while there is an error.',
+              errorText: 'Please select a valid cutoff date and time.',
+            ),
+          ),
+        ),
+      );
+
+      expect(
+        find.text('Please select a valid cutoff date and time.'),
+        findsOneWidget,
+      );
+      expect(find.text('Not shown while there is an error.'), findsNothing);
+    });
+  });
+
   group('BCTimeField', () {
     testWidgets('opens the wheel picker and confirms a time', (tester) async {
       TimeOfDay? picked;

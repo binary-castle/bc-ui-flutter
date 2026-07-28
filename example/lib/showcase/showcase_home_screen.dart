@@ -9,6 +9,7 @@ import 'package:example/showcase/screens/checkbox_showcase_screen.dart';
 import 'package:example/showcase/screens/chip_showcase_screen.dart';
 import 'package:example/showcase/screens/control_field_showcase_screen.dart';
 import 'package:example/showcase/screens/date_field_showcase_screen.dart';
+import 'package:example/showcase/screens/date_time_picker_showcase_screen.dart';
 import 'package:example/showcase/screens/demo_app_screen.dart';
 import 'package:example/showcase/screens/dialog_showcase_screen.dart';
 import 'package:example/showcase/screens/empty_state_showcase_screen.dart';
@@ -65,6 +66,10 @@ final List<ComponentEntry> componentRegistry = [
   ComponentEntry('Chip', (_) => const ChipShowcaseScreen()),
   ComponentEntry('ControlField', (_) => const ControlFieldShowcaseScreen()),
   ComponentEntry('DateField', (_) => const DateFieldShowcaseScreen()),
+  ComponentEntry(
+    'DateTimePicker',
+    (_) => const DateTimePickerShowcaseScreen(),
+  ),
   ComponentEntry('Dialog', (_) => const DialogShowcaseScreen()),
   ComponentEntry('EmptyState', (_) => const EmptyStateShowcaseScreen()),
   ComponentEntry('FAB', (_) => const FabShowcaseScreen()),

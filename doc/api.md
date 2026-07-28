@@ -17,7 +17,7 @@ source, so they track the code.
 - [Actions](#actions) — `BCButton`, `BCLinkButton`, `BCCloseButton`, `BCFab`, `BCSpeedDial`, `BCToggleButton`, `BCToggleButtonGroup`, `BCPressable`
 - [Containers](#containers) — `BCSurface`, `BCCard`, `BCListGroup`, `BCFlipCard`, `BCScrollShadow`
 - [Data display](#data-display) — `BCText`, `BCAvatar`, `BCChip`, `BCTagGroup`, `BCSeparator`, `BCSkeleton`, `BCSpinner`, `BCProgress`, `BCLoadingOverlay`, `BCRating`, `BCEmptyState`
-- [Forms](#forms) — `BCInput`, `BCTextField`, `BCTextArea`, `BCPasswordInput`, `BCSearchField`, `BCInputOTP`, `BCDateField`, `BCTimeField`, `BCSelect`, `BCControlField`
+- [Forms](#forms) — `BCInput`, `BCTextField`, `BCTextArea`, `BCPasswordInput`, `BCSearchField`, `BCInputOTP`, `BCDateField`, `BCTimeField`, `BCDateTimePicker`, `BCDateTimeWheel`, `BCSelect`, `BCControlField`
 - [Selection](#selection) — `BCCheckbox`, `BCRadioGroup`, `BCSwitch`, `BCSlider`, `BCRangeSlider`
 - [Overlays](#overlays) — `BCDialog`, `BCPopover`, `BCMenu`, `BCToast`
 
@@ -1556,6 +1556,87 @@ The scroll-wheel time picker opened by `BCTimeField`. Can also be used directly:
 | `minuteStep` | `int` | `1` |  |
 
 </details>
+
+### BCDateTimePicker
+
+Date **and** time in one field: day, hour, minute (and AM/PM) wheels presented in a popover, a dialog or a bottom sheet, with built-in label, description and error slots.
+
+```dart
+BCDateTimePicker(
+  label: 'Reminder',
+  isRequired: true,
+  description: 'Required to schedule the notification.',
+  value: _reminder,
+  onChanged: (value) => setState(() => _reminder = value),
+);
+
+// 24-hour wheels stepping in 5 minutes, shown as a bottom sheet.
+BCDateTimePicker(
+  presentation: BCDateTimePickerPresentation.bottomSheet,
+  use24HourFormat: true,
+  minuteInterval: 5,
+  value: _departure,
+  onChanged: (value) => setState(() => _departure = value),
+);
+```
+
+| Prop | Type | Default | Notes |
+|---|---|---|---|
+| `value` | `DateTime?` | — |  |
+| `onChanged` | `ValueChanged<DateTime>?` | — |  |
+| `firstDate` | `DateTime?` | — | Earliest selectable moment. Defaults to the start of today. |
+| `lastDate` | `DateTime?` | — | Latest selectable moment. Defaults to five years out. |
+| `presentation` | `BCDateTimePickerPresentation` | `BCDateTimePickerPresentation.popover` | Popover and bottom sheet apply each spin immediately; the dialog waits for Confirm. |
+| `use24HourFormat` | `bool` | `false` |  |
+| `minuteInterval` | `int` | `1` | Minute step, e.g. 5 for `00, 05, 10 …`. |
+| `placeholder` | `String` | `'Choose a date & time'` |  |
+| `label` | `String?` | — | Rendered above the field with `BCLabel`. |
+| `description` | `String?` | — | Muted helper text under the field. Replaced by `errorText` when set. |
+| `errorText` | `String?` | — | Error message under the field; also forces the invalid styling. |
+| `isRequired` | `bool` | `false` |  |
+| `isInvalid` | `bool` | `false` |  |
+| `isDisabled` | `bool` | `false` |  |
+| `variant` | `BCInputVariant` | `BCInputVariant.primary` |  |
+| `formatDateTime` | `String Function(DateTime value)?` | — | Formats the value in the field. Defaults to `Jul 26, 2026, 9:00 AM` (or 24-hour when `use24HourFormat`). |
+| `formatDay` | `String Function(DateTime day)?` | — | Day column label inside the wheels. See `BCDateTimeWheel.formatDay`. |
+| `icon` | `Widget` | `const Icon(Icons.calendar_today_outlined)` |  |
+| `wheelHeight` | `double` | `220` |  |
+
+**`BCDateTimePickerPresentation`** — `popover`, `dialog`, `bottomSheet`
+
+**`BCInputVariant`** — `primary`, `secondary`
+
+<details><summary><code>BCDateTimeWheel</code></summary>
+
+Scrolling day + time wheels, in the style of iOS pickers but built from bc_ui tokens.  This is the panel behind `BCDateTimePicker`; use it directly to embed the wheels in a form or a sheet of your own.
+
+| Prop | Type | Default | Notes |
+|---|---|---|---|
+| `value` | `DateTime` | required |  |
+| `onChanged` | `ValueChanged<DateTime>` | required |  |
+| `firstDate` | `DateTime` | required |  |
+| `lastDate` | `DateTime` | required |  |
+| `use24HourFormat` | `bool` | `false` | 24-hour wheels drop the AM/PM column and show `00`–`23`. |
+| `minuteInterval` | `int` | `1` | Minute step, e.g. 5 for `00, 05, 10 …`. |
+| `formatDay` | `String Function(DateTime day)?` | — | Day column label. Defaults to `Today` for the current date and `Wed, Jul 29` otherwise. |
+| `height` | `double` | `220` |  |
+
+</details>
+
+### BCDateTimeWheel
+
+The wheels behind `BCDateTimePicker`, usable on their own to embed day/time selection in a form or a sheet of your own.
+
+| Prop | Type | Default | Notes |
+|---|---|---|---|
+| `value` | `DateTime` | required |  |
+| `onChanged` | `ValueChanged<DateTime>` | required |  |
+| `firstDate` | `DateTime` | required |  |
+| `lastDate` | `DateTime` | required |  |
+| `use24HourFormat` | `bool` | `false` | 24-hour wheels drop the AM/PM column and show `00`–`23`. |
+| `minuteInterval` | `int` | `1` | Minute step, e.g. 5 for `00, 05, 10 …`. |
+| `formatDay` | `String Function(DateTime day)?` | — | Day column label. Defaults to `Today` for the current date and `Wed, Jul 29` otherwise. |
+| `height` | `double` | `220` |  |
 
 ### BCSelect
 

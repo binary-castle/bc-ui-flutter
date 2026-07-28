@@ -157,7 +157,7 @@ CATALOG = [
     ('Forms', [
         'BCInput', 'BCTextField', 'BCTextArea', 'BCPasswordInput',
         'BCSearchField', 'BCInputOTP', 'BCDateField', 'BCTimeField',
-        'BCSelect', 'BCControlField',
+        'BCDateTimePicker', 'BCDateTimeWheel', 'BCSelect', 'BCControlField',
     ]),
     ('Selection', [
         'BCCheckbox', 'BCRadioGroup', 'BCSwitch', 'BCSlider', 'BCRangeSlider',
@@ -209,6 +209,8 @@ SUMMARY = {
     'BCInputOTP': 'One-time-code field composed of slots, with a caret and separators.',
     'BCDateField': 'Read-only field that opens a date picker dialog. Months change by swiping the calendar grid or with the header arrows.',
     'BCTimeField': 'Read-only field that opens a time picker dialog.',
+    'BCDateTimePicker': 'Date **and** time in one field: day, hour, minute (and AM/PM) wheels presented in a popover, a dialog or a bottom sheet, with built-in label, description and error slots.',
+    'BCDateTimeWheel': 'The wheels behind `BCDateTimePicker`, usable on their own to embed day/time selection in a form or a sheet of your own.',
     'BCSelect': 'Anchored dropdown select.',
     'BCControlField': 'Row that pairs a control (switch, checkbox, radio) with a label and description.',
     'BCCheckbox': 'Checkbox with a spring-animated indicator.',
@@ -503,6 +505,22 @@ const BCText('Muted caption', type: BCTextType.bodyXs, color: BCTextColor.muted)
     ],
   ),
 );''',
+    'BCDateTimePicker': '''BCDateTimePicker(
+  label: 'Reminder',
+  isRequired: true,
+  description: 'Required to schedule the notification.',
+  value: _reminder,
+  onChanged: (value) => setState(() => _reminder = value),
+);
+
+// 24-hour wheels stepping in 5 minutes, shown as a bottom sheet.
+BCDateTimePicker(
+  presentation: BCDateTimePickerPresentation.bottomSheet,
+  use24HourFormat: true,
+  minuteInterval: 5,
+  value: _departure,
+  onChanged: (value) => setState(() => _departure = value),
+);''',
     'BCSelect': '''BCSelect<String>(
   value: plan,
   onValueChange: (value) => setState(() => plan = value),
@@ -647,6 +665,7 @@ SUBPARTS = {
     'BCSkeleton': ['BCSkeletonGroup'],
     'BCRadioGroup': ['BCRadio'],
     'BCDateField': ['BCDatePickerDialog'],
+    'BCDateTimePicker': ['BCDateTimeWheel'],
     'BCTimeField': ['BCTimePickerDialog'],
     'BCControlField': ['BCLabel', 'BCDescription', 'BCFieldError'],
 }
