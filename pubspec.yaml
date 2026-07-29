@@ -1,6 +1,6 @@
 name: bc_ui
 description: "A Flutter design system porting heroui-native 1:1 — 45+ token-driven components, light and dark, on a Material 3 base."
-version: 0.0.2
+version: 0.0.3
 repository: https://github.com/binary-castle/bc-ui-flutter
 issue_tracker: https://github.com/binary-castle/bc-ui-flutter/issues
 

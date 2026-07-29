@@ -1,3 +1,9 @@
+## 0.0.3
+
+* The README's License section still said the license was a placeholder, left
+  over from before the package was licensed. It now states Apache-2.0 and
+  credits heroui-native. pub.dev's own metadata was already correct.
+
 ## 0.0.2
 
 * Fixed the README on pub.dev: images and repository links are absolute now.

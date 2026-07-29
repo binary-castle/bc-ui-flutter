@@ -49,7 +49,7 @@ or add it by hand:
 
 ```yaml
 dependencies:
-  bc_ui: ^0.0.2
+  bc_ui: ^0.0.3
 ```
 
 Requires Dart SDK `^3.12.1`. No other runtime dependencies.
@@ -211,4 +211,10 @@ flutter test
 
 ## License
 
-The `LICENSE` file is still a placeholder — pick a license before publishing.
+Apache-2.0 — see [LICENSE](https://github.com/binary-castle/bc-ui-flutter/blob/main/LICENSE).
+
+bc_ui is a port of [heroui-native](https://github.com/heroui-inc/heroui-native)
+(Apache-2.0, © NextUI Inc.), reimplemented in Dart against Flutter's widget
+layer. [NOTICE](https://github.com/binary-castle/bc-ui-flutter/blob/main/NOTICE)
+records the attribution, how the port differs, and the bundled Inter font (OFL)
+and CC0 brand marks.
