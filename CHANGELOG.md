@@ -1,4 +1,24 @@
-## 0.0.3
+## 0.1.0
+
+**Select**
+
+* Three presentations: the anchored `popover` it always had, a `bottomSheet`
+  with room for a long list, and a `wheel` for short ordered ones, committed
+  with Done. Set with `presentation`.
+* Search. `isSearchable` filters on label and description; `onSearch` replaces
+  that with your own lookup — debounced by `searchDebounce`, awaited with a
+  spinner, and rendered exactly as returned, so it can hit the network.
+* Pagination. `onLoadMore` fires as the list nears its end, once per page;
+  `isLoadingMore` shows a spinner under the last row.
+* Rows take `leading` and `trailing` widgets, a per-item `onTap` that runs
+  alongside the value change, and `isDisabled`. `itemBuilder` hands the whole
+  row over, selection state included.
+* `emptyPlaceholder` and `maxListHeight` for the rest.
+
+The version jumps to 0.1.0 so `^0.1.0` resolves the way callers expect;
+`^0.0.x` had pinned them to a single patch.
+
+**Fixes**
 
 * The README's License section still said the license was a placeholder, left
   over from before the package was licensed. It now states Apache-2.0 and

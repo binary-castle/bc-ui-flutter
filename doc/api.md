@@ -1836,17 +1836,71 @@ The hour / minute (and AM/PM) wheels behind `BCTimeField`. Usable on its own.
 
 ### BCSelect
 
-Anchored dropdown select.
+Dropdown select with three presentations — an anchored popover, a bottom sheet, or a spinning wheel — plus search and pagination hooks for lists too long to scroll. `isSearchable` filters locally; `onSearch` hands the lookup to you (debounced and awaited, so it can hit the network); `onLoadMore` fires as the list nears its end. Rows take `leading`/`trailing` slots, a per-item `onTap` and `isDisabled`, or hand the whole row to `itemBuilder`.
 
 ```dart
+// The default: an anchored list under the trigger.
 BCSelect<String>(
-  value: plan,
-  onValueChange: (value) => setState(() => plan = value),
-  listLabel: 'Plans',
+  placeholder: 'Select a country',
   items: const [
-    BCSelectItem(value: 'free', label: 'Free', description: 'For trying things out'),
-    BCSelectItem(value: 'pro', label: 'Pro', description: r'$12 / month'),
+    BCSelectItem(value: 'bd', label: 'Bangladesh'),
+    BCSelectItem(value: 'jp', label: 'Japan'),
   ],
+  value: country,
+  onValueChange: (value) => setState(() => country = value),
+);
+
+// A long list: a sheet gives it room, and search keeps it usable.
+BCSelect<String>(
+  presentation: BCSelectPresentation.bottomSheet,
+  isSearchable: true,
+  searchPlaceholder: 'Search timezones',
+  listLabel: 'Timezones',
+  items: timezones,
+  value: zone,
+  onValueChange: (value) => setState(() => zone = value),
+);
+
+// Your own lookup instead of the built-in filter — debounced, awaited,
+// and free to hit the network. Pair it with onLoadMore to page.
+BCSelect<String>(
+  presentation: BCSelectPresentation.bottomSheet,
+  items: page,
+  onSearch: (query) => api.searchCities(query),
+  onLoadMore: loadNextPage,
+  isLoadingMore: isLoading,
+  value: city,
+  onValueChange: (value) => setState(() => city = value),
+);
+
+// Rows carry an avatar, a badge, their own errand.
+BCSelectItem(
+  value: 'ada',
+  label: 'Ada Lovelace',
+  description: 'Engineering',
+  leading: BCAvatar.withInitials('AL', size: BCAvatarSize.small),
+  trailing: BCChip.label('Owner', size: BCChipSize.sm),
+  onTap: () => analytics.log('assignee_row_tapped'),
+);
+
+// Or take the row over entirely — selection is handed to you.
+BCSelect<String>(
+  items: tiers,
+  value: tier,
+  onValueChange: (value) => setState(() => tier = value),
+  itemBuilder: (context, item, isSelected) => MyTierRow(
+    item: item,
+    isSelected: isSelected,
+  ),
+);
+
+// Short and ordered? Spin it. Committed with Done.
+BCSelect<int>(
+  presentation: BCSelectPresentation.wheel,
+  listLabel: 'Party size',
+  items: [for (var i = 1; i <= 12; i++) BCSelectItem(value: i, label: '$i')],
+  value: guests,
+  onValueChange: (value) => setState(() => guests = value),
 );
 ```
 
@@ -1856,11 +1910,23 @@ BCSelect<String>(
 | `value` | `T?` | — |  |
 | `onValueChange` | `ValueChanged<T>?` | — |  |
 | `placeholder` | `String` | `'Select an option'` |  |
-| `listLabel` | `String?` | — | Optional label above the option list (select__list-label). |
+| `listLabel` | `String?` | — | Optional label above the option list (select__list-label). Doubles as the header title in the sheet presentations. |
 | `isDisabled` | `bool` | `false` |  |
-| `placement` | `BCOverlayPlacement` | `BCOverlayPlacement.auto` |  |
+| `placement` | `BCOverlayPlacement` | `BCOverlayPlacement.auto` | Where the list opens relative to the trigger. Popover only. |
+| `presentation` | `BCSelectPresentation` | `BCSelectPresentation.popover` |  |
+| `isSearchable` | `bool` | `false` | Shows a search field above the list, filtering `items` on label and description. Implied by `onSearch`. |
+| `searchPlaceholder` | `String` | `'Search'` |  |
+| `onSearch` | `Future<List<BCSelectItem<T>>> Function(String query)?` | — | Your own lookup, in place of the built-in filter — debounced by `searchDebounce` and awaited with a spinner while it runs. |
+| `searchDebounce` | `Duration` | `const Duration(milliseconds: 250)` |  |
+| `onLoadMore` | `VoidCallback?` | — | Called as the list scrolls within 200px of its end, once per page. Append to `items` and the list keeps going. |
+| `isLoadingMore` | `bool` | `false` | Shows a spinner below the last option while a page is in flight. |
+| `emptyPlaceholder` | `Widget?` | — | Shown when the list has nothing in it. Defaults to 'No results'. |
+| `itemBuilder` | `Widget Function( BuildContext context, BCSelectItem<T> item, bool isSelected, )?` | — | Replaces the row layout wholesale — price columns, two-line meta, whatever the screen needs. Press feedback, the tap and the disabled state still come from the list, and `isSelected` is handed to you so the selection can be shown however you like.  Ignored by `BCSelectPresentation.wheel`, which spins labels. |
+| `maxListHeight` | `double?` | — | Cap on the popover list's height. Defaults to 280. |
 
 **`BCOverlayPlacement`** — `bottom`, `top`, `auto`
+
+**`BCSelectPresentation`** — `popover`, `bottomSheet`, `wheel`
 
 <details><summary><code>BCSelectItem</code></summary>
 
@@ -1869,6 +1935,10 @@ BCSelect<String>(
 | `value` | `T` | required |  |
 | `label` | `String` | required |  |
 | `description` | `String?` | — |  |
+| `leading` | `Widget?` | — | Prefix widget — an avatar, a flag, an icon. Sized by you; the row centres it against the label. |
+| `trailing` | `Widget?` | — | Suffix widget — a price, a chip, a shortcut hint. Sits between the label and the selection check. |
+| `onTap` | `VoidCallback?` | — | Runs when this row is picked, alongside `BCSelect.onValueChange`. Use it for the side errand a row sometimes carries: logging, prefetching, or pushing a 'manage…' route. |
+| `isDisabled` | `bool` | `false` | Greys the row out and stops it being picked. |
 
 </details>
 

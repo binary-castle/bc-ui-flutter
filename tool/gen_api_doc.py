@@ -220,7 +220,7 @@ SUMMARY = {
     'BCTimeWheel': 'The hour / minute (and AM/PM) wheels behind `BCTimeField`. Usable on its own.',
     'BCDateTimePicker': 'Date **and** time in one field: day, hour, minute (and AM/PM) wheels presented in a popover, a dialog or a bottom sheet, with built-in label, description and error slots.',
     'BCDateTimeWheel': 'The wheels behind `BCDateTimePicker`, usable on their own to embed day/time selection in a form or a sheet of your own.',
-    'BCSelect': 'Anchored dropdown select.',
+    'BCSelect': "Dropdown select with three presentations — an anchored popover, a bottom sheet, or a spinning wheel — plus search and pagination hooks for lists too long to scroll. `isSearchable` filters locally; `onSearch` hands the lookup to you (debounced and awaited, so it can hit the network); `onLoadMore` fires as the list nears its end. Rows take `leading`/`trailing` slots, a per-item `onTap` and `isDisabled`, or hand the whole row to `itemBuilder`.",
     'BCControlField': 'Row that pairs a control (switch, checkbox, radio) with a label and description.',
     'BCCheckbox': 'Checkbox with a spring-animated indicator.',
     'BCRadioGroup': 'Radio group; wraps `BCRadio` children and owns the selected value.',
@@ -596,6 +596,69 @@ BCDateTimePicker(
     BCSelectItem(value: 'free', label: 'Free', description: 'For trying things out'),
     BCSelectItem(value: 'pro', label: 'Pro', description: r'$12 / month'),
   ],
+);''',
+    'BCSelect': '''// The default: an anchored list under the trigger.
+BCSelect<String>(
+  placeholder: 'Select a country',
+  items: const [
+    BCSelectItem(value: 'bd', label: 'Bangladesh'),
+    BCSelectItem(value: 'jp', label: 'Japan'),
+  ],
+  value: country,
+  onValueChange: (value) => setState(() => country = value),
+);
+
+// A long list: a sheet gives it room, and search keeps it usable.
+BCSelect<String>(
+  presentation: BCSelectPresentation.bottomSheet,
+  isSearchable: true,
+  searchPlaceholder: 'Search timezones',
+  listLabel: 'Timezones',
+  items: timezones,
+  value: zone,
+  onValueChange: (value) => setState(() => zone = value),
+);
+
+// Your own lookup instead of the built-in filter — debounced, awaited,
+// and free to hit the network. Pair it with onLoadMore to page.
+BCSelect<String>(
+  presentation: BCSelectPresentation.bottomSheet,
+  items: page,
+  onSearch: (query) => api.searchCities(query),
+  onLoadMore: loadNextPage,
+  isLoadingMore: isLoading,
+  value: city,
+  onValueChange: (value) => setState(() => city = value),
+);
+
+// Rows carry an avatar, a badge, their own errand.
+BCSelectItem(
+  value: 'ada',
+  label: 'Ada Lovelace',
+  description: 'Engineering',
+  leading: BCAvatar.withInitials('AL', size: BCAvatarSize.small),
+  trailing: BCChip.label('Owner', size: BCChipSize.sm),
+  onTap: () => analytics.log('assignee_row_tapped'),
+);
+
+// Or take the row over entirely — selection is handed to you.
+BCSelect<String>(
+  items: tiers,
+  value: tier,
+  onValueChange: (value) => setState(() => tier = value),
+  itemBuilder: (context, item, isSelected) => MyTierRow(
+    item: item,
+    isSelected: isSelected,
+  ),
+);
+
+// Short and ordered? Spin it. Committed with Done.
+BCSelect<int>(
+  presentation: BCSelectPresentation.wheel,
+  listLabel: 'Party size',
+  items: [for (var i = 1; i <= 12; i++) BCSelectItem(value: i, label: '$i')],
+  value: guests,
+  onValueChange: (value) => setState(() => guests = value),
 );''',
     'BCControlField': '''BCControlField(
   label: 'Push notifications',
