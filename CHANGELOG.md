@@ -4,6 +4,8 @@
   pub.dev strips raw `<img>` tags and drops repo-relative links, so the banner,
   the light/dark screenshots and every entry in the component table rendered
   without them.
+* Install instructions now point at the published package rather than a local
+  path dependency.
 
 ## 0.0.1
 

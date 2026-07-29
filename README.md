@@ -41,10 +41,15 @@ tabs, list group, chips, bottom nav. Its source is
 
 ## Install
 
+```bash
+flutter pub add bc_ui
+```
+
+or add it by hand:
+
 ```yaml
 dependencies:
-  bc_ui:
-    path: ../bc_ui # or a git / hosted reference
+  bc_ui: ^0.0.2
 ```
 
 Requires Dart SDK `^3.12.1`. No other runtime dependencies.
