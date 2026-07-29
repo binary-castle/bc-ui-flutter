@@ -64,6 +64,30 @@ def split_args(s):
     return out
 
 
+def split_params(s):
+    """Split a constructor's argument list into (positional, named).
+
+    Dart parks named parameters inside a trailing `{...}` (optional positionals
+    inside `[...]`). Feeding that straight to `split_args` counts the brace as
+    nesting, so everything after the first positional collapses into one
+    unparseable chunk and every named parameter is silently dropped. Peel the
+    group off first, then split each part on its own.
+    """
+    depth = 0
+    for i, ch in enumerate(s):
+        if depth == 0 and ch in '{[':
+            head = s[:i].rstrip().rstrip(',')
+            tail = s[i + 1:].rstrip().rstrip(',')
+            if tail.endswith(('}', ']')):
+                tail = tail[:-1]
+            return split_args(head), split_args(tail)
+        if ch in '([{<':
+            depth += 1
+        elif ch in ')]}>':
+            depth -= 1
+    return split_args(s), []
+
+
 def parse_class(name, body):
     """Return (params, fields, doc_by_field)."""
     fields = {}
@@ -78,13 +102,15 @@ def parse_class(name, body):
             docs[fm.group(3)] = d
 
     ctor = re.search(
-        r'(?:const\s+)?' + re.escape(name) + r'(?:<[^>]*>)?\(\s*(?:\{)?(.*?)\}?\)\s*(?::|;|\{)',
+        r'(?:const\s+)?' + re.escape(name) + r'(?:<[^>]*>)?\((.*?)\)\s*(?::|;|\{)',
         body, re.S,
     )
     params = []
     if ctor:
         seen = set()
-        for arg in split_args(ctor.group(1)):
+        positional, named = split_params(ctor.group(1))
+        args = [(True, a) for a in positional] + [(False, a) for a in named]
+        for is_positional, arg in args:
             arg = re.sub(r'///[^\n]*', '', arg).strip().rstrip(',')
             if not arg or arg.startswith('//'):
                 continue
@@ -98,10 +124,13 @@ def parse_class(name, body):
             if pname in seen or pname == 'key':
                 continue
             seen.add(pname)
+            default = re.sub(r'\s+', ' ', (pm.group(3) or '').strip())
             params.append({
                 'name': pname,
-                'required': bool(pm.group(1)),
-                'default': re.sub(r'\s+', ' ', (pm.group(3) or '').strip()),
+                # A positional with no default is required without saying so.
+                'required': bool(pm.group(1)) or (is_positional and not default),
+                'positional': is_positional,
+                'default': default,
                 'type': fields.get(pname, ''),
                 'doc': docs.get(pname, ''),
             })
@@ -130,7 +159,7 @@ def extract(root='lib/src'):
                             values.append(m2.group(1))
                     api[name] = {'kind': 'enum', 'doc': doc, 'values': values}
                 else:
-                    api[name] = {'kind': 'class', 'doc': doc,
+                    api[name] = {'kind': 'class', 'doc': doc, 'body': body,
                                  'params': parse_class(name, body)}
     return api
 
@@ -770,6 +799,13 @@ MEMBERS = {
         ('void jumpTo(T value)', 'Switch without animating.'),
         ('void dispose()', 'Disposes the page controller too.'),
     ],
+    'BCAnchoredOverlayController': [
+        ('BCAnchoredOverlayController()', 'Create one per anchored overlay in a `State` and dispose it there. Drives `BCPopover`, `BCMenu` and `BCSelect`.'),
+        ('bool isOpen', 'Whether the overlay is showing.'),
+        ('void open()', 'Show the overlay.'),
+        ('void close()', 'Hide it.'),
+        ('void toggle()', 'The usual `onPressed` for a trigger.'),
+    ],
     'BCDialog': [
         ('static Future<R?> show<R>(BuildContext context, {required WidgetBuilder builder, bool barrierDismissible = true})', 'Presents `builder` over the themed backdrop with the scale + fade transition.'),
     ],
@@ -790,23 +826,32 @@ SUBPARTS = {
     'BCTabs': ['BCTabItem', 'BCTabsController'],
     'BCNavRail': ['BCNavRailDestination'],
     'BCNavDrawer': [
-        'BCNavDrawerDestination', 'BCNavDrawerSection', 'BCNavDrawerDivider',
+        'BCNavDrawerItem', 'BCNavDrawerDestination', 'BCNavDrawerSection',
+        'BCNavDrawerDivider',
     ],
     'BCRangeSlider': ['BCRange'],
     'BCBottomNav': ['BCBottomNavItem'],
     'BCAvatar': ['BCAvatarImage', 'BCAvatarFallback'],
     'BCTextField': ['BCTextFieldLabel', 'BCTextFieldInput', 'BCTextFieldDescription', 'BCTextFieldError'],
-    'BCInputOTP': ['BCInputOTPGroup', 'BCInputOTPSlot', 'BCInputOTPSeparator'],
+    'BCInputOTP': [
+        'BCInputOTPGroup', 'BCInputOTPSlot', 'BCInputOTPSlotPlaceholder',
+        'BCInputOTPSlotValue', 'BCInputOTPSlotCaret', 'BCInputOTPSeparator',
+    ],
     'BCSelect': ['BCSelectItem'],
     'BCTagGroup': ['BCTagItem'],
     'BCSpeedDial': ['BCSpeedDialItem'],
     'BCToggleButtonGroup': ['BCToggleButtonOption'],
     'BCDialog': ['BCDialogContent', 'BCDialogTitle', 'BCDialogDescription'],
-    'BCPopover': ['BCPopoverTitle', 'BCPopoverDescription'],
+    'BCPopover': [
+        'BCPopoverTitle', 'BCPopoverDescription', 'BCAnchoredOverlayController',
+    ],
     'BCMenu': ['BCMenuItem', 'BCMenuLabel', 'BCMenuSeparator'],
     'BCToast': ['BCToastData', 'BCToastProvider'],
     'BCEmptyState': ['BCEmptyStateAvatarCluster'],
-    'BCSkeleton': ['BCSkeletonGroup'],
+    'BCSkeleton': [
+        'BCSkeletonGroup', 'BCSkeletonAnimation',
+        'BCSkeletonShimmerAnimation', 'BCSkeletonPulseAnimation',
+    ],
     'BCRadioGroup': ['BCRadio'],
     'BCDateField': ['BCDatePickerDialog', 'BCCalendar'],
     'BCDateTimePicker': ['BCDateTimeWheel'],
@@ -821,14 +866,9 @@ DEFAULTS = {
     'BCMotion.pressScale': '0.985',
 }
 
-POSITIONAL = {
-    ('BCText', 'data'), ('BCCardTitle', 'text'), ('BCCardDescription', 'text'),
-    ('BCDialogTitle', 'text'), ('BCDialogDescription', 'text'),
-    ('BCPopoverTitle', 'text'), ('BCPopoverDescription', 'text'),
-    ('BCMenuLabel', 'text'), ('BCLabel', 'text'), ('BCDescription', 'text'),
-    ('BCFieldError', 'text'), ('BCTextFieldLabel', 'text'),
-    ('BCTextFieldDescription', 'text'), ('BCTextFieldError', 'text'),
-}
+# Positional arguments are derived from the constructor by `split_params`,
+# not listed by hand — the old table drifted (it claimed BCTextFieldError took
+# `text` when the field is `message`).
 
 
 def clean_doc(s):
@@ -853,13 +893,16 @@ def props_table(name, level='####'):
     if not params:
         return ''
     rows = ['| Prop | Type | Default | Notes |', '|---|---|---|---|']
+    seen_positional = 0
     for p in params:
         raw = DEFAULTS.get(p['default'], p['default'])
         default = 'required' if p['required'] else (code(raw) or '—')
         notes = esc(p['doc'])
-        if (name, p['name']) in POSITIONAL:
-            default = 'required'
-            notes = ('First positional argument. ' + notes).strip()
+        if p.get('positional'):
+            label = 'First positional argument.' if seen_positional == 0 \
+                else f'Positional argument {seen_positional + 1}.'
+            notes = (label + ' ' + notes).strip()
+            seen_positional += 1
         rows.append(
             f"| `{p['name']}` | {code(p['type'])} | {default} | {notes} |"
         )
@@ -877,58 +920,70 @@ def enums_for(name):
     return found
 
 
-out = []
-w = out.append
+def render_header_and_contents():
+    out = []
+    w = out.append
 
-w('# bc_ui API reference')
-w('')
-w('Every component, its props and its enums. Prop tables are generated from the')
-w('source, so they track the code.')
-w('')
-w('- New here? Start with the [README](../README.md).')
-w('- These tables are generated: `python3 tool/gen_api_doc.py` re-extracts them')
-w('  from `lib/src` after an API change.')
-w('- Looking for a live version of a component? `cd example && flutter run` —')
-w('  one screen per component, each with paged usage variants.')
-w('')
-w('## Contents')
-w('')
-w('- [Conventions](#conventions)')
-w('- [Theme and tokens](#theme-and-tokens)')
-for section, names in CATALOG:
-    anchor = section.lower().replace(' ', '-')
-    w(f'- [{section}](#{anchor}) — ' + ', '.join(f'`{n}`' for n in names))
-w('')
-w('---')
-w('')
+    w('# bc_ui API reference')
+    w('')
+    w('Every component, its props and its enums. Prop tables are generated from the')
+    w('source, so they track the code.')
+    w('')
+    w('- New here? Start with the [README](../README.md).')
+    w('- These tables are generated: `python3 tool/gen_api_doc.py` re-extracts them')
+    w('  from `lib/src` after an API change.')
+    w('- Looking for a live version of a component? `cd example && flutter run` —')
+    w('  one screen per component, each with paged usage variants.')
+    w('')
+    w('## Contents')
+    w('')
+    w('- [Conventions](#conventions)')
+    w('- [Theme and tokens](#theme-and-tokens)')
+    for section, names in CATALOG:
+        anchor = section.lower().replace(' ', '-')
+        w(f'- [{section}](#{anchor}) — ' + ', '.join(f'`{n}`' for n in names))
+    w('')
+    w('---')
+    w('')
+    return out
 
-w('## Conventions')
-w('')
-w('A few rules hold across the whole library, so you can guess most APIs:')
-w('')
-w('- **Every component reads its colors from the theme**, never from hard-coded')
-w('  values. Reach the tokens yourself with `context.bcTheme`.')
-w('- **`variant` picks the look, `size` picks the metrics.** Both are enums named')
-w('  after the component (`BCButtonVariant`, `BCButtonSize`).')
-w('- **State is controlled.** Widgets take a value plus a change callback')
-w('  (`isSelected` + `onSelectedChange`, `value` + `onValueChange`) and never own')
-w('  their state, except where a controller is explicitly provided.')
-w('- **Disabled is `isDisabled`, invalid is `isInvalid`** — never `enabled: false`.')
-w('- **Compound components** (Card, TextField, InputOTP, Dialog, Menu) are built')
-w('  from named parts you compose as children, mirroring heroui-native.')
-w('- **Pickers share one `presentation`.** `BCDateField`, `BCTimeField` and')
-w('  `BCDateTimePicker` all take a `BCPickerPresentation` — `dialog`,')
-w('  `popover` or `bottomSheet` — and behave the same way in each.')
-w('- **Continuous corners everywhere.** Radii come from `BCRadius` and are drawn')
-w('  with `BCShapes.continuous` (Apple-style squircles), not plain circles.')
-w('')
 
-w('## Theme and tokens')
-w('')
-w('### Installing the theme')
-w('')
-w('```dart')
-w('''MaterialApp(
+def render_conventions():
+    out = []
+    w = out.append
+
+    w('## Conventions')
+    w('')
+    w('A few rules hold across the whole library, so you can guess most APIs:')
+    w('')
+    w('- **Every component reads its colors from the theme**, never from hard-coded')
+    w('  values. Reach the tokens yourself with `context.bcTheme`.')
+    w('- **`variant` picks the look, `size` picks the metrics.** Both are enums named')
+    w('  after the component (`BCButtonVariant`, `BCButtonSize`).')
+    w('- **State is controlled.** Widgets take a value plus a change callback')
+    w('  (`isSelected` + `onSelectedChange`, `value` + `onValueChange`) and never own')
+    w('  their state, except where a controller is explicitly provided.')
+    w('- **Disabled is `isDisabled`, invalid is `isInvalid`** — never `enabled: false`.')
+    w('- **Compound components** (Card, TextField, InputOTP, Dialog, Menu) are built')
+    w('  from named parts you compose as children, mirroring heroui-native.')
+    w('- **Pickers share one `presentation`.** `BCDateField`, `BCTimeField` and')
+    w('  `BCDateTimePicker` all take a `BCPickerPresentation` — `dialog`,')
+    w('  `popover` or `bottomSheet` — and behave the same way in each.')
+    w('- **Continuous corners everywhere.** Radii come from `BCRadius` and are drawn')
+    w('  with `BCShapes.continuous` (Apple-style squircles), not plain circles.')
+    w('')
+    return out
+
+
+def render_setup():
+    """`### Installing the theme` + `### BCThemeOverrides`."""
+    out = []
+    w = out.append
+
+    w('### Installing the theme')
+    w('')
+    w('```dart')
+    w('''MaterialApp(
   theme: BCTheme.light(),
   darkTheme: BCTheme.dark(),
   themeMode: ThemeMode.system,
@@ -936,25 +991,33 @@ w('''MaterialApp(
   builder: (context, child) => BCToastProvider(child: child!),
   home: const HomeScreen(),
 );''')
-w('```')
-w('')
-w('### `BCThemeOverrides`')
-w('')
-w('```dart')
-w('''BCTheme.light(
+    w('```')
+    w('')
+    w('### `BCThemeOverrides`')
+    w('')
+    w('```dart')
+    w('''BCTheme.light(
   overrides: BCThemeOverrides(
     accent: const Color(0xFF0F766E), // hover/soft/focus tokens are recomputed
     fontFamily: 'SF Pro Text',       // defaults to the bundled Inter
   ),
 );''')
-w('```')
-w('')
-w(props_table('BCThemeOverrides'))
-w('')
-w('### Reading tokens')
-w('')
-w('```dart')
-w('''final bc = context.bcTheme; // BCThemeExtension
+    w('```')
+    w('')
+    w(props_table('BCThemeOverrides'))
+    w('')
+    return out
+
+
+def render_reading_snippet():
+    """Just the `### Reading tokens` how-to, without the token inventories."""
+    out = []
+    w = out.append
+
+    w('### Reading tokens')
+    w('')
+    w('```dart')
+    w('''final bc = context.bcTheme; // BCThemeExtension
 
 Container(color: bc.surface);
 Text('Hi', style: TextStyle(color: bc.muted));
@@ -965,102 +1028,519 @@ DecoratedBox(
     shadows: bc.surfaceShadow.shadows,
   ),
 );''')
-w('```')
-w('')
-w('`context` also exposes `theme`, `colors` (Material `ColorScheme`) and `text`')
-w('(`TextTheme`) for the Material widgets you mix in.')
-w('')
-w('### Color tokens')
-w('')
-w('The 64 semantic slots mirror heroui-native\'s `--color-*` variables. Grouped:')
-w('')
-w('| Group | Tokens |')
-w('|---|---|')
-w('| Page | `background`, `backgroundSecondary`, `backgroundTertiary`, `backgroundInverse`, `foreground` |')
-w('| Surfaces | `surface`, `surfaceForeground`, `surfaceHover`, `surfaceSecondary(+Foreground)`, `surfaceTertiary(+Foreground)` |')
-w('| Overlays | `overlay`, `overlayForeground`, `backdrop` |')
-w('| Accent | `accent`, `accentForeground`, `accentHover`, `accentSoft(+Foreground, +Hover)`, `focus`, `link` |')
-w('| Neutral | `defaultColor`, `defaultForeground`, `defaultHover`, `defaultSoft(+Foreground, +Hover)`, `muted`, `segment`, `segmentForeground` |')
-w('| Status | `success`, `warning`, `danger` — each with `Foreground`, `Hover`, `Soft`, `SoftForeground`, `SoftHover` |')
-w('| Fields | `field`, `fieldForeground`, `fieldPlaceholder`, `fieldBorder`, `fieldHover`, `fieldFocus`, `fieldBorderHover`, `fieldBorderFocus` |')
-w('| Lines | `border`, `borderSecondary`, `borderTertiary`, `separator`, `separatorSecondary`, `separatorTertiary` |')
-w('| Elevation | `surfaceShadow`, `overlayShadow`, `fieldShadow` (`BCShadowSet`: `shadows` + optional `innerBorder`) |')
-w('| Metrics | `borderWidth` (1), `opacityDisabled` (0.5) |')
-w('')
-w('### Design tokens')
-w('')
-w('| Class | What it holds |')
-w('|---|---|')
-w('| `BCSpacing` | 4px base unit: `xxs` 2, `xs` 4, `sm` 8, `md` 16, `lg` 24, `xl` 32, `xxl` 48, plus `unit(n)` |')
-w('| `BCRadius` | `xs` 2 → `xxxxl` 32, `field` 14, `full` 999 (base 8) |')
-w('| `BCShapes` | `continuous(radius)` / `continuousFrom(borderRadius)` — squircle borders |')
-w('| `BCTypography` | Inter + tailwind scale: `textXs`…`text4xl`, weights, `trackingTight(size)` |')
-w('| `BCSizes` | Button/input/avatar/spinner metrics |')
-w('| `BCMotion` | heroui timings and spring descriptions (press scale, switch thumb, tabs indicator…) |')
-w('| `BCDuration` | `fast` 150ms, `normal` 250ms, `slow` 400ms |')
-w('| `BCShadows` | Raw light/dark shadow sets behind the theme tokens |')
-w('| `BCBreakpoints` | Layout breakpoints |')
-w('')
-w('---')
-w('')
-
-for section, names in CATALOG:
-    w(f'## {section}')
+    w('```')
     w('')
-    for name in names:
-        e = API.get(name)
-        if not e:
-            continue
-        w(f'### {name}')
+    w('`context` also exposes `theme`, `colors` (Material `ColorScheme`) and `text`')
+    w('(`TextTheme`) for the Material widgets you mix in.')
+    w('')
+    return out
+
+
+def render_reading_tokens():
+    """`### Reading tokens` + the color and design token summary tables."""
+    out = render_reading_snippet()
+    w = out.append
+
+    w('### Color tokens')
+    w('')
+    w('The 64 semantic slots mirror heroui-native\'s `--color-*` variables. Grouped:')
+    w('')
+    w('| Group | Tokens |')
+    w('|---|---|')
+    w('| Page | `background`, `backgroundSecondary`, `backgroundTertiary`, `backgroundInverse`, `foreground` |')
+    w('| Surfaces | `surface`, `surfaceForeground`, `surfaceHover`, `surfaceSecondary(+Foreground)`, `surfaceTertiary(+Foreground)` |')
+    w('| Overlays | `overlay`, `overlayForeground`, `backdrop` |')
+    w('| Accent | `accent`, `accentForeground`, `accentHover`, `accentSoft(+Foreground, +Hover)`, `focus`, `link` |')
+    w('| Neutral | `defaultColor`, `defaultForeground`, `defaultHover`, `defaultSoft(+Foreground, +Hover)`, `muted`, `segment`, `segmentForeground` |')
+    w('| Status | `success`, `warning`, `danger` — each with `Foreground`, `Hover`, `Soft`, `SoftForeground`, `SoftHover` |')
+    w('| Fields | `field`, `fieldForeground`, `fieldPlaceholder`, `fieldBorder`, `fieldHover`, `fieldFocus`, `fieldBorderHover`, `fieldBorderFocus` |')
+    w('| Lines | `border`, `borderSecondary`, `borderTertiary`, `separator`, `separatorSecondary`, `separatorTertiary` |')
+    w('| Elevation | `surfaceShadow`, `overlayShadow`, `fieldShadow` (`BCShadowSet`: `shadows` + optional `innerBorder`) |')
+    w('| Metrics | `borderWidth` (1), `opacityDisabled` (0.5) |')
+    w('')
+    w('### Design tokens')
+    w('')
+    w('| Class | What it holds |')
+    w('|---|---|')
+    w('| `BCSpacing` | 4px base unit: `xxs` 2, `xs` 4, `sm` 8, `md` 16, `lg` 24, `xl` 32, `xxl` 48, plus `unit(n)` |')
+    w('| `BCRadius` | `xs` 2 → `xxxxl` 32, `field` 14, `full` 999 (base 8) |')
+    w('| `BCShapes` | `continuous(radius)` / `continuousFrom(borderRadius)` — squircle borders |')
+    w('| `BCTypography` | Inter + tailwind scale: `textXs`…`text4xl`, weights, `trackingTight(size)` |')
+    w('| `BCSizes` | Button/input/avatar/spinner metrics |')
+    w('| `BCMotion` | heroui timings and spring descriptions (press scale, switch thumb, tabs indicator…) |')
+    w('| `BCDuration` | `fast` 150ms, `normal` 250ms, `slow` 400ms |')
+    w('| `BCShadows` | Raw light/dark shadow sets behind the theme tokens |')
+    w('| `BCBreakpoints` | Layout breakpoints |')
+    w('')
+    return out
+
+
+def render_component(name, heading='###', collapse_subparts=True):
+    """One `### BCFoo` block: summary, example, props, members, enums, subparts."""
+    e = API.get(name)
+    if not e:
+        return []
+    out = []
+    w = out.append
+
+    w(f'{heading} {name}')
+    w('')
+    summary = SUMMARY.get(name) or clean_doc(e.get('doc', ''))
+    summary = re.sub(r'\[([^\]]+)\]', r'`\1`', summary)
+    if summary:
+        w(summary)
         w('')
-        summary = SUMMARY.get(name) or clean_doc(e.get('doc', ''))
-        summary = re.sub(r'\[([^\]]+)\]', r'`\1`', summary)
-        if summary:
-            w(summary)
-            w('')
-        if name in EXAMPLES:
-            w('```dart')
-            w(EXAMPLES[name])
-            w('```')
-            w('')
-        table = props_table(name)
-        if table:
-            w(table)
-            w('')
-        for sig, desc in MEMBERS.get(name, []):
-            w(f'- `{sig}` — {desc}')
-        if name in MEMBERS:
-            w('')
-        ens = enums_for(name)
-        if ens:
-            for en in ens:
-                vals = ', '.join(f'`{v}`' for v in ENUMS[en]['values'])
-                w(f'**`{en}`** — {vals}')
-                w('')
-        subs = SUBPARTS.get(name, [])
-        for sub in subs:
-            se = API.get(sub)
-            if not se:
-                continue
+    if name in EXAMPLES:
+        w('```dart')
+        w(EXAMPLES[name])
+        w('```')
+        w('')
+    table = props_table(name)
+    if table:
+        w(table)
+        w('')
+    for sig, desc in MEMBERS.get(name, []):
+        w(f'- `{sig}` — {desc}')
+    if name in MEMBERS:
+        w('')
+    for en in enums_for(name):
+        vals = ', '.join(f'`{v}`' for v in ENUMS[en]['values'])
+        w(f'**`{en}`** — {vals}')
+        w('')
+    for sub in SUBPARTS.get(name, []):
+        se = API.get(sub)
+        if not se:
+            continue
+        # api.md collapses subparts behind <details>; the agent references
+        # spell them out as headings, since nothing collapses in a grep.
+        if collapse_subparts:
             w(f'<details><summary><code>{sub}</code></summary>')
+        else:
+            w(f'{heading}# {sub}')
+        w('')
+        sdoc = re.sub(r'\[([^\]]+)\]', r'`\1`', clean_doc(se.get('doc', '')))
+        if sdoc:
+            w(sdoc)
             w('')
-            sdoc = re.sub(r'\[([^\]]+)\]', r'`\1`', clean_doc(se.get('doc', '')))
-            if sdoc:
-                w(sdoc)
-                w('')
-            stable = props_table(sub)
-            if stable:
-                w(stable)
-                w('')
-            for en in enums_for(sub):
-                vals = ', '.join(f'`{v}`' for v in ENUMS[en]['values'])
-                w(f'**`{en}`** — {vals}')
-                w('')
+        stable = props_table(sub)
+        if stable:
+            w(stable)
+            w('')
+        for sig, desc in MEMBERS.get(sub, []):
+            w(f'- `{sig}` — {desc}')
+        if sub in MEMBERS:
+            w('')
+        for en in enums_for(sub):
+            vals = ', '.join(f'`{v}`' for v in ENUMS[en]['values'])
+            w(f'**`{en}`** — {vals}')
+            w('')
+        if collapse_subparts:
             w('</details>')
             w('')
-    w('---')
-    w('')
+    return out
 
-OUT = sys.argv[1] if len(sys.argv) > 1 else 'doc/api.md'
-open(OUT, 'w').write('\n'.join(out).rstrip() + '\n')
-print('wrote', OUT, f'({len(API)} symbols)')
+
+def render_section(section, names, heading='##', **kw):
+    """A `## Forms` block: every component in it, then a rule."""
+    out = [f'{heading} {section}', '']
+    for name in names:
+        out += render_component(name, heading=heading + '#', **kw)
+    out += ['---', '']
+    return out
+
+
+def build_api_md():
+    out = []
+    out += render_header_and_contents()
+    out += render_conventions()
+    out += ['## Theme and tokens', '']
+    out += render_setup()
+    out += render_reading_tokens()
+    out += ['---', '']
+    for section, names in CATALOG:
+        out += render_section(section, names)
+    return '\n'.join(out).rstrip() + '\n'
+
+
+# ---------------------------------------------------------------------------
+# Agent skill (skills/bc-ui) — same extraction, split for progressive disclosure
+# ---------------------------------------------------------------------------
+
+VERSION = re.search(r'^version:\s*(\S+)', open('pubspec.yaml').read(), re.M).group(1)
+
+SKILL_DIR = 'skills/bc-ui'
+REF_DIR = SKILL_DIR + '/references'
+
+# Forms is by far the largest section (~600 lines). The pickers are a
+# self-contained cluster sharing one BCPickerPresentation, so they get their
+# own file — that halves the read cost of the common case, building a text
+# form. doc/api.md keeps its original seven sections.
+PICKERS = [
+    'BCDateField', 'BCTimeField', 'BCDateTimePicker',
+    'BCDateTimeWheel', 'BCCalendar', 'BCTimeWheel',
+]
+
+
+def reference_specs():
+    """(slug, title, [component names]) for each reference file."""
+    specs = []
+    for section, names in CATALOG:
+        if section == 'Forms':
+            specs.append(('forms', 'Forms',
+                          [n for n in names if n not in PICKERS]))
+            specs.append(('pickers', 'Date and time pickers',
+                          [n for n in names if n in PICKERS]))
+        else:
+            specs.append((section.lower().replace(' ', '-'), section, names))
+    return specs
+
+
+def skill_header(title):
+    return [
+        f'<!-- Generated by tool/gen_api_doc.py from bc_ui {VERSION}. Do not edit. -->',
+        '',
+        f'# {title} — bc_ui reference',
+        '',
+    ]
+
+
+def build_reference(title, names):
+    out = skill_header(title)
+    present = [n for n in names if n in API]
+    out.append('Components: ' + ', '.join(f'`{n}`' for n in present) + '.')
+    out.append('')
+    for name in present:
+        out += render_component(name, heading='##', collapse_subparts=False)
+    return '\n'.join(out).rstrip() + '\n'
+
+
+def promote(lines):
+    """`### Foo` -> `## Foo`: these blocks sit under a `##` in api.md, but head
+    their own file in the skill."""
+    return [re.sub(r'^### ', '## ', l) for l in lines]
+
+
+def build_setup_md():
+    out = skill_header('Setup and theming')
+    out += promote(render_setup())
+    out += promote(render_reading_snippet())
+    return '\n'.join(out).rstrip() + '\n'
+
+
+def class_fields(name):
+    """(field, type, doc) for every `final` field on a class."""
+    body = API.get(name, {}).get('body', '')
+    found = []
+    for m in re.finditer(
+        r'((?:[ \t]*///[^\n]*\n)*)[ \t]*(?:final|late final)\s+'
+        r'([\w<>,\?\s\.]+?)\s+(\w+)\s*;',
+        body,
+    ):
+        doc = ' '.join(l.strip()[3:].strip()
+                       for l in m.group(1).strip().split('\n') if l.strip())
+        found.append((m.group(3), re.sub(r'\s+', ' ', m.group(2)).strip(), doc))
+    return found
+
+
+def static_consts(name):
+    """(name, type, value, doc) for every `static const` on a token class."""
+    body = API.get(name, {}).get('body', '')
+    found = []
+    for m in re.finditer(
+        # The type annotation is optional — `static const buttonSm = 36.0;`.
+        r'((?:[ \t]*///[^\n]*\n)*)[ \t]*static const\s+(?:([\w<>?]+)\s+)?(\w+)\s*=\s*([^;]+);',
+        body,
+    ):
+        doc = ' '.join(l.strip()[3:].strip()
+                       for l in m.group(1).strip().split('\n') if l.strip())
+        found.append((m.group(3), m.group(2) or '',
+                      re.sub(r'\s+', ' ', m.group(4).strip()), doc))
+    return found
+
+
+TOKEN_CLASSES = [
+    ('BCSpacing', 'Spacing — 4px base unit. Also `BCSpacing.unit(n)`.'),
+    ('BCRadius', 'Corner radii. Draw them with `BCShapes.continuous(...)`.'),
+    ('BCSizes', 'Component metrics — button, input, avatar and spinner sizes.'),
+    ('BCDuration', 'Animation durations.'),
+    ('BCBreakpoints', 'Layout breakpoints.'),
+]
+
+
+def build_tokens_md():
+    out = skill_header('Design tokens')
+    out.append('Every name below is real and current. If a token you want is not')
+    out.append('here, it does not exist — compose from what is, never hard-code a')
+    out.append('literal colour, radius, spacing or duration.')
+    out.append('')
+    out += promote(render_reading_snippet())
+
+    fields = class_fields('BCThemeExtension')
+    colors = [f for f in fields if f[1] == 'Color']
+    others = [f for f in fields if f[1] != 'Color']
+
+    out.append(f'## Semantic colours ({len(colors)})')
+    out.append('')
+    out.append('Reached as `context.bcTheme.<name>`. Light and dark are resolved for')
+    out.append('you — there is never a reason to branch on brightness yourself. The')
+    out.append('`*Foreground` of a slot is what stays legible on top of it.')
+    out.append('')
+    out.append(', '.join(f'`{f[0]}`' for f in colors) + '.')
+    out.append('')
+
+    if others:
+        out.append('## Other theme slots')
+        out.append('')
+        out.append('| Slot | Type | Notes |')
+        out.append('|---|---|---|')
+        for fname, ftype, doc in others:
+            out.append(f'| `{fname}` | {code(ftype)} | {esc(doc)} |')
+        out.append('')
+
+    for cname, blurb in TOKEN_CLASSES:
+        consts = static_consts(cname)
+        if not consts:
+            continue
+        out.append(f'## `{cname}`')
+        out.append('')
+        out.append(blurb)
+        out.append('')
+        out.append('| Constant | Value | Notes |')
+        out.append('|---|---|---|')
+        for kname, _, value, doc in consts:
+            out.append(f'| `{cname}.{kname}` | `{value}` | {esc(doc)} |')
+        out.append('')
+
+    out.append('## Shapes, type and motion')
+    out.append('')
+    out.append('- `BCShapes.continuous(radius, {side})` / '
+               '`BCShapes.continuousFrom(borderRadius, {side})` — the only')
+    out.append('  sanctioned way to build corners. Never `BorderRadius.circular`.')
+    out.append('- `BCTypography` — Inter plus the tailwind scale: `textXs`…`text4xl`,')
+    out.append('  `regular`/`medium`/`semiBold`/`bold`, `trackingTight(fontSize)`.')
+    out.append('  Prefer `BCText` over a raw `Text` + `TextStyle`.')
+    out.append('- `BCMotion` — ported springs and timings (`pressScale`,')
+    out.append('  `switchThumbSpring`, `timingCurve`, …). Use these rather than')
+    out.append('  inventing a curve, so motion matches the rest of the library.')
+    out.append('- `BCShadowSet` — `shadows` (a `List<BoxShadow>`) plus an optional')
+    out.append('  `innerBorder`. Apply both; dark mode leans on the inner border.')
+    out.append('')
+    return '\n'.join(out).rstrip() + '\n'
+
+
+def scan_balanced(s, start):
+    """End index of the `(`-group opened just before `start`, skipping strings.
+
+    Assert messages routinely contain unbalanced parens — "(paired with a
+    BCTabView)" — so depth counting has to know when it is inside a literal.
+    Commas at depth 0, outside strings, are recorded on the way past.
+    """
+    i, depth, commas, quote = start, 1, [], ''
+    while i < len(s) and depth:
+        ch = s[i]
+        if quote:
+            if ch == '\\':
+                i += 1
+            elif ch == quote:
+                quote = ''
+        elif ch in '\'"':
+            quote = ch
+        elif ch in '([{':
+            depth += 1
+        elif ch in ')]}':
+            depth -= 1
+        elif ch == ',' and depth == 1:
+            commas.append(i)
+        i += 1
+    return i - 1, commas
+
+
+def asserts_for(name):
+    """(condition, message) for each `assert` in a class body."""
+    body = re.sub(r'///[^\n]*', '', API.get(name, {}).get('body', ''))
+    found = []
+    for m in re.finditer(r'\bassert\(', body):
+        end, commas = scan_balanced(body, m.end())
+        inner = body[m.end():end]
+        cond, msg = inner, ''
+        # The message, when present, is the trailing string-literal argument.
+        for c in reversed(commas):
+            tail = body[c + 1:end].strip()
+            if tail.startswith(("'", '"')):
+                cond, msg = body[m.end():c], tail
+                break
+        cond = re.sub(r'\s+', ' ', cond.strip()).rstrip(',')
+        # Dart concatenates adjacent literals; stitch them back together.
+        chunks = re.findall(r"'((?:[^'\\]|\\.)*)'|\"((?:[^\"\\]|\\.)*)\"", msg)
+        msg = ''.join(a or b for a, b in chunks)
+        found.append((cond, re.sub(r'\s+', ' ', msg.replace("\\'", "'")).strip()))
+    return [(c, m) for c, m in found if c]
+
+
+# Traps a parser cannot infer: things that compile, run, and quietly do the
+# wrong thing. Each entry is (component, what goes wrong / what to do).
+GOTCHAS = [
+    ('Theme', 'Every BC widget resolves its colours through `context.bcTheme`, '
+     'which ends in a null assertion. Under a bare `MaterialApp` — or a widget '
+     'test that forgets `theme: BCTheme.light()` — every one of them throws. '
+     'There is no graceful fallback by design.'),
+    ('BCToast', '`BCToast.show` finds its host with an ancestor-state lookup and '
+     '`assert`s when it is missing. In a release build the assert is stripped and '
+     'the call becomes a silent no-op — no toast, no error. Mount '
+     '`BCToastProvider` via `MaterialApp.builder` before using it. Note the '
+     'provider defaults to `BCToastPlacement.bottom`.'),
+    ('BCTextFieldError', 'Renders `SizedBox.shrink()` unless its parent '
+     '`BCTextField` has `isInvalid: true`. Setting the message alone shows '
+     'nothing — flip `isInvalid` on the parent at the same time. This is the '
+     'single most common "my validation message never appears" bug.'),
+    ('Compound parts', '`BCTextFieldLabel` / `BCTextFieldInput` / '
+     '`BCTextFieldDescription`, `BCRadio`, `BCMenuItem`, `BCInputOTPSlot*`, '
+     '`BCAvatarImage` / `BCAvatarFallback` and `BCCard*` all read an inherited '
+     'scope from their parent. Used standalone they do not throw — they fall '
+     'back to neutral defaults or render nothing, and a `BCRadio` outside a '
+     '`BCRadioGroup` simply ignores taps. Always compose them under their parent.'),
+    ('BCAppHeader', 'The frosted variants need something to blur: pair with '
+     '`Scaffold(extendBodyBehindAppBar: true)`. The body then sits behind the '
+     'header, so pad it yourself by '
+     '`MediaQuery.paddingOf(context).top + BCAppHeader.defaultToolbarHeight` '
+     '(56). Skipping this hides your first rows under the header.'),
+    ('Generics', '`BCTabs<T>`, `BCTabView<T>`, `BCSelect<T>`, `BCRadioGroup<T>` '
+     'and `BCTagGroup<T>` infer `T` from their items. With `const` item lists '
+     'inference can land on the wrong type — write the type argument explicitly.'),
+    ('Controllers', '`BCTabsController` owns a `PageController`; create it in a '
+     '`State` and dispose it there. Hand it to a `BCTabView`, not to a bare '
+     '`PageView` you also drive. `BCAnchoredOverlayController` (for `BCPopover`, '
+     '`BCMenu`, `BCSelect`) is a `ChangeNotifier` with `open()` / `close()` / '
+     '`toggle()` / `isOpen`, reached through the `trigger: (context, controller)` '
+     'builder — dispose it the same way.'),
+]
+
+INTERNAL = [
+    'BCAnchoredOverlay', 'BCPickerPanel', 'BCPickerSheet', 'BCSvgPath',
+    'BCColorSchemes', 'BCColorsLight', 'BCColorsDark', 'BCTextStyles',
+    'BCAppBarTheme', 'BCAvatarTheme', 'BCSkeletonTheme', 'BCInputOTPTheme',
+]
+
+
+def build_gotchas_md():
+    out = skill_header('Traps')
+    out.append('Failures here compile cleanly and often run without an error, so')
+    out.append('the analyzer will not save you. Read this before debugging a')
+    out.append('bc_ui widget that renders but looks wrong.')
+    out.append('')
+    out.append('## Silent failures')
+    out.append('')
+    for subject, text in GOTCHAS:
+        out.append(f'- **{subject}.** {text}')
+    out.append('')
+
+    out.append('## Constructor and build asserts')
+    out.append('')
+    out.append('These throw loudly in debug. Extracted from the source, so the')
+    out.append('list stays complete as the library grows.')
+    out.append('')
+    out.append('| Component | Rule | Message |')
+    out.append('|---|---|---|')
+    scanned = []
+    for _, names in CATALOG:
+        scanned += names
+    scanned += [s for subs in SUBPARTS.values() for s in subs]
+    scanned += ['BCTabsController', 'BCToast', 'BCThemeExtension']
+    for name in dict.fromkeys(scanned):
+        for cond, msg in asserts_for(name):
+            out.append(f'| `{name}` | {code(cond)} | {esc(msg)} |')
+    out.append('')
+
+    out.append('## Not public API')
+    out.append('')
+    out.append('Exported or reachable, but internal — do not use these, they will')
+    out.append('change without a version bump:')
+    out.append('')
+    out.append(', '.join(f'`{n}`' for n in INTERNAL) + '.')
+    out.append('')
+    return '\n'.join(out).rstrip() + '\n'
+
+
+CATALOG_BEGIN = '<!-- BEGIN GENERATED: catalog -->'
+CATALOG_END = '<!-- END GENERATED -->'
+
+
+def build_catalog_block():
+    """The routing table spliced into SKILL.md."""
+    out = [CATALOG_BEGIN, '']
+    out.append(f'Generated from bc_ui {VERSION}.')
+    out.append('')
+    out.append('| Read this file | For these components |')
+    out.append('|---|---|')
+    out.append('| `references/setup.md` | `BCTheme`, `BCThemeOverrides`, `BCToastProvider` |')
+    out.append('| `references/tokens.md` | `context.bcTheme` colours, `BCSpacing`, `BCRadius`, `BCShapes`, `BCTypography`, `BCSizes`, `BCMotion`, `BCDuration`, `BCBreakpoints` |')
+    for slug, title, names in reference_specs():
+        present = [n for n in names if n in API]
+        out.append(f'| `references/{slug}.md` | ' +
+                   ', '.join(f'`{n}`' for n in present) + ' |')
+    out.append('| `references/gotchas.md` | Silent failures, asserts, internal-only names |')
+    out.append('')
+    out.append(CATALOG_END)
+    return '\n'.join(out)
+
+
+def splice_catalog(path):
+    """Rewrite the generated region of SKILL.md in place."""
+    text = open(path).read()
+    if CATALOG_BEGIN not in text or CATALOG_END not in text:
+        sys.exit(f'{path}: missing {CATALOG_BEGIN} / {CATALOG_END} markers')
+    head = text.split(CATALOG_BEGIN)[0]
+    tail = text.split(CATALOG_END, 1)[1]
+    return head + build_catalog_block() + tail
+
+
+def targets():
+    out = [('doc/api.md', build_api_md()),
+           (f'{REF_DIR}/setup.md', build_setup_md()),
+           (f'{REF_DIR}/tokens.md', build_tokens_md()),
+           (f'{REF_DIR}/gotchas.md', build_gotchas_md())]
+    for slug, title, names in reference_specs():
+        out.append((f'{REF_DIR}/{slug}.md', build_reference(title, names)))
+    skill = f'{SKILL_DIR}/SKILL.md'
+    if os.path.exists(skill):
+        out.append((skill, splice_catalog(skill)))
+    return out
+
+
+def undocumented():
+    """Public BC* symbols in lib/src that no output mentions."""
+    known = set(INTERNAL)
+    for _, names in CATALOG:
+        known.update(names)
+    known.update(s for subs in SUBPARTS.values() for s in subs)
+    known.update(MEMBERS)
+    known.update(ENUMS)
+    known.update(['BCTheme', 'BCThemeOverrides', 'BCThemeExtension',
+                  'BCShapes', 'BCShadows', 'BCShadowSet', 'BCMotion',
+                  'BCSpacing', 'BCRadius', 'BCSizes', 'BCDuration',
+                  'BCTypography', 'BCBreakpoints'])
+    return sorted(n for n in API if n.startswith('BC') and n not in known)
+
+
+if __name__ == '__main__':
+    args = sys.argv[1:]
+    if '--check-coverage' in args:
+        missing = undocumented()
+        for name in missing:
+            print('undocumented:', name)
+        sys.exit(1 if missing else 0)
+
+    built = targets()
+    if '--check' in args:
+        stale = [p for p, body in built
+                 if not os.path.exists(p) or open(p).read() != body]
+        for p in stale:
+            print('stale:', p)
+        if stale:
+            print('\nRun `python3 tool/gen_api_doc.py` and commit the result.')
+        sys.exit(1 if stale else 0)
+
+    for path, body in built:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        open(path, 'w').write(body)
+    print(f'wrote {len(built)} files from {len(API)} symbols (bc_ui {VERSION})')

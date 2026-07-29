@@ -400,6 +400,12 @@ Scaffold(
 
 **`BCNavDrawerVariant`** — `standard`, `modal`
 
+<details><summary><code>BCNavDrawerItem</code></summary>
+
+An entry in a `BCNavDrawer`: a destination, a section label, or a rule.
+
+</details>
+
 <details><summary><code>BCNavDrawerDestination</code></summary>
 
 A selectable destination. Only these count towards `selectedIndex`.
@@ -421,7 +427,7 @@ A muted heading above a group of destinations.
 
 | Prop | Type | Default | Notes |
 |---|---|---|---|
-| `label` | `String` | — |  |
+| `label` | `String` | required | First positional argument. |
 
 </details>
 
@@ -519,6 +525,16 @@ Shared state for a `BCTabs` bar and the `BCTabView` it drives.  The controller o
 |---|---|---|---|
 | `values` |  | required |  |
 | `initialValue` |  | — |  |
+
+- `BCTabsController({required List<T> values, T? initialValue})` — Create one per tab bar + view pair and dispose it with your `State`.
+- `T value` — The settled tab.
+- `int index` — Index of the settled tab.
+- `double offset` — Continuous position — `1.4` halfway through a swipe from tab 1 to 2. Drives the indicator.
+- `List<T> values` — The tab values, in panel order.
+- `PageController pageController` — Owned by the controller; hand it to `BCTabView`, not to a bare `PageView`.
+- `Future<void> animateTo(T value, {Duration duration, Curve curve})` — Animate bar + panels to a tab.
+- `void jumpTo(T value)` — Switch without animating.
+- `void dispose()` — Disposes the page controller too.
 
 </details>
 
@@ -1023,6 +1039,19 @@ const BCText('Muted caption', type: BCTextType.bodyXs, color: BCTextColor.muted)
 | Prop | Type | Default | Notes |
 |---|---|---|---|
 | `data` | `String` | required | First positional argument. |
+| `type` | `BCTextType` | `BCTextType.body` |  |
+| `color` | `BCTextColor` | `BCTextColor.foreground` |  |
+| `weight` | `BCTextWeight?` | — | Explicit weight wins over the type's default weight. |
+| `align` | `TextAlign?` | — |  |
+| `maxLines` | `int?` | — |  |
+| `overflow` | `TextOverflow?` | — |  |
+| `style` | `TextStyle?` | — | Merged last, over the resolved style. |
+
+**`BCTextType`** — `h1`, `h2`, `h3`, `h4`, `h5`, `h6`, `body`, `bodySm`, `bodyXs`, `code`
+
+**`BCTextColor`** — `foreground`, `muted`
+
+**`BCTextWeight`** — `normal`, `medium`, `semibold`, `bold`
 
 ### BCAvatar
 
@@ -1261,6 +1290,42 @@ HeroUI Native SkeletonGroup: cascades `isLoading`, `variant`, and `animation` to
 
 </details>
 
+<details><summary><code>BCSkeletonAnimation</code></summary>
+
+| Prop | Type | Default | Notes |
+|---|---|---|---|
+| `shimmer` | `BCSkeletonShimmerAnimation?` | — |  |
+| `pulse` | `BCSkeletonPulseAnimation?` | — |  |
+| `enteringDuration` | `Duration?` | — |  |
+| `exitingDuration` | `Duration?` | — |  |
+| `disableAll` | `bool` | `false` |  |
+
+</details>
+
+<details><summary><code>BCSkeletonShimmerAnimation</code></summary>
+
+| Prop | Type | Default | Notes |
+|---|---|---|---|
+| `duration` | `Duration?` | — |  |
+| `speed` | `double?` | — |  |
+| `highlightColor` | `Color?` | — |  |
+| `curve` | `Curve?` | — |  |
+| `disabled` | `bool` | `false` |  |
+
+</details>
+
+<details><summary><code>BCSkeletonPulseAnimation</code></summary>
+
+| Prop | Type | Default | Notes |
+|---|---|---|---|
+| `duration` | `Duration?` | — |  |
+| `minOpacity` | `double?` | — |  |
+| `maxOpacity` | `double?` | — |  |
+| `curve` | `Curve?` | — |  |
+| `disabled` | `bool` | `false` |  |
+
+</details>
+
 ### BCSpinner
 
 Indeterminate loading indicator.
@@ -1464,6 +1529,7 @@ BCTextField(
 | Prop | Type | Default | Notes |
 |---|---|---|---|
 | `text` | `String` | required | First positional argument. |
+| `isInvalid` | `bool?` | — |  |
 
 </details>
 
@@ -1510,7 +1576,7 @@ BCTextField(
 
 | Prop | Type | Default | Notes |
 |---|---|---|---|
-| `message` | `String` | — |  |
+| `message` | `String` | required | First positional argument. |
 
 </details>
 
@@ -1628,6 +1694,26 @@ BCInputOTP(
 | `child` | `Widget?` | — |  |
 
 **`BCInputOTPVariant`** — `primary`, `secondary`
+
+</details>
+
+<details><summary><code>BCInputOTPSlotPlaceholder</code></summary>
+
+| Prop | Type | Default | Notes |
+|---|---|---|---|
+| `child` | `String?` | — |  |
+
+</details>
+
+<details><summary><code>BCInputOTPSlotValue</code></summary>
+
+| Prop | Type | Default | Notes |
+|---|---|---|---|
+| `child` | `String?` | — |  |
+
+</details>
+
+<details><summary><code>BCInputOTPSlotCaret</code></summary>
 
 </details>
 
@@ -1971,6 +2057,10 @@ HeroUI Native Label: medium-weight field label with an optional required asteris
 | Prop | Type | Default | Notes |
 |---|---|---|---|
 | `text` | `String` | required | First positional argument. |
+| `isRequired` | `bool` | `false` |  |
+| `isInvalid` | `bool` | `false` |  |
+| `isDisabled` | `bool` | `false` |  |
+| `isInsideField` | `bool` | `false` | Adds the horizontal padding used when the label sits inside a TextField layout. |
 
 </details>
 
@@ -1981,6 +2071,10 @@ HeroUI Native Description: muted helper text that fades in on mount (description
 | Prop | Type | Default | Notes |
 |---|---|---|---|
 | `text` | `String` | required | First positional argument. |
+| `isInvalid` | `bool` | `false` |  |
+| `isDisabled` | `bool` | `false` |  |
+| `isInsideField` | `bool` | `false` |  |
+| `animate` | `bool` | `true` |  |
 
 </details>
 
@@ -1991,6 +2085,8 @@ HeroUI Native FieldError: danger-colored validation message that fades in on mou
 | Prop | Type | Default | Notes |
 |---|---|---|---|
 | `text` | `String` | required | First positional argument. |
+| `isInsideField` | `bool` | `false` |  |
+| `animate` | `bool` | `true` |  |
 
 </details>
 
@@ -2131,8 +2227,8 @@ A start/end pair for `BCRangeSlider`.
 
 | Prop | Type | Default | Notes |
 |---|---|---|---|
-| `start` | `double` | — |  |
-| `end` | `double` | — |  |
+| `start` | `double` | required | First positional argument. |
+| `end` | `double` | required | Positional argument 2. |
 
 </details>
 
@@ -2252,6 +2348,18 @@ Popover description: text-base, muted, 1.375 line-height.
 | Prop | Type | Default | Notes |
 |---|---|---|---|
 | `text` | `String` | required | First positional argument. |
+
+</details>
+
+<details><summary><code>BCAnchoredOverlayController</code></summary>
+
+Controller for a `BCAnchoredOverlay`.
+
+- `BCAnchoredOverlayController()` — Create one per anchored overlay in a `State` and dispose it there. Drives `BCPopover`, `BCMenu` and `BCSelect`.
+- `bool isOpen` — Whether the overlay is showing.
+- `void open()` — Show the overlay.
+- `void close()` — Hide it.
+- `void toggle()` — The usual `onPressed` for a trigger.
 
 </details>
 

@@ -18,8 +18,25 @@
 The version jumps to 0.1.0 so `^0.1.0` resolves the way callers expect;
 `^0.0.x` had pinned them to a single patch.
 
+**Agent skill**
+
+* `skills/bc-ui/` teaches an AI agent to use the library — setup, the naming
+  conventions, a routing table to per-category references, and the traps that
+  fail silently. Install with `npx skills add binary-castle/bc-ui-flutter`, or
+  copy it into `.claude/skills/`; it ships in the package either way.
+* Its references come out of `tool/gen_api_doc.py`, the same script that writes
+  `doc/api.md`, so they cannot drift. `--check` fails when either is stale and
+  `--check-coverage` lists public symbols nothing documents.
+
 **Fixes**
 
+* The generated prop tables dropped every named parameter of a constructor that
+  led with a positional one, so `BCText` was documented as taking only `data`,
+  and `BCLabel`, `BCDescription`, `BCFieldError` and `BCTextFieldLabel` were
+  each missing their flags. `BCTextFieldError`'s argument was listed as `text`
+  when it is `message`. All now generated correctly, along with the previously
+  undocumented `BCTextWeight`, `BCInputOTPSlot*`, `BCSkeleton*Animation`,
+  `BCNavDrawerItem` and `BCAnchoredOverlayController`.
 * The README's License section still said the license was a placeholder, left
   over from before the package was licensed. It now states Apache-2.0 and
   credits heroui-native. pub.dev's own metadata was already correct.
