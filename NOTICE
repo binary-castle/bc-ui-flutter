@@ -1,0 +1,20 @@
+bc_ui
+Copyright 2026 Binary Castle
+
+This product includes software developed by NextUI Inc.
+(https://github.com/heroui-inc/heroui-native).
+
+bc_ui is a Flutter port of heroui-native, licensed under the Apache
+License, Version 2.0. The design tokens, component specifications and
+motion values are derived from that work and have been modified: they are
+reimplemented in Dart against Flutter's widget layer, with the colour
+tokens precomputed from heroui-native's oklch sources into static light
+and dark palettes.
+
+Bundled third-party assets:
+
+  * Inter (assets/fonts) — SIL Open Font License 1.1, see
+    assets/fonts/LICENSE.txt.
+  * Brand marks in lib/src/widgets/bc_brand_logo.dart — glyph data from
+    simple-icons and Iconify's "logos" set, both CC0-1.0. Brand names and
+    logos remain trademarks of their respective owners.
