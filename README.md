@@ -1,6 +1,4 @@
-<p align="center">
-  <img src="doc/assets/banner.png" alt="bc_ui — HeroUI Native, ported to Flutter" width="100%">
-</p>
+![bc_ui — HeroUI Native, ported to Flutter](https://raw.githubusercontent.com/binary-castle/bc-ui-flutter/main/doc/assets/banner.png)
 
 <p align="center">
   <b>A Flutter design system that ports <a href="https://github.com/heroui-inc/heroui-native">heroui-native</a> 1:1</b><br>
@@ -8,7 +6,7 @@
 </p>
 
 <p align="center">
-  <a href="doc/api.md"><b>API reference</b></a> ·
+  <a href="https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md"><b>API reference</b></a> ·
   <a href="#components">Components</a> ·
   <a href="#theming">Theming</a> ·
   <a href="#example-app">Example app</a>
@@ -31,18 +29,15 @@
   `Scaffold`, `Navigator`, `showDialog` and every Material widget still work.
 - **Inter is bundled.** No font setup, no missing-glyph surprises.
 - **50+ components**, all light/dark aware, all documented in the
-  [API reference](doc/api.md).
+  [API reference](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md).
 
-<table>
-  <tr>
-    <td align="center"><img src="doc/assets/demo-light.png" width="260" alt="Light theme"><br><sub><b>Light</b></sub></td>
-    <td align="center"><img src="doc/assets/demo-dark.png" width="260" alt="Dark theme"><br><sub><b>Dark</b></sub></td>
-  </tr>
-</table>
+| Light | Dark |
+|:---:|:---:|
+| ![Light theme](https://raw.githubusercontent.com/binary-castle/bc-ui-flutter/main/doc/assets/demo-light.png) | ![Dark theme](https://raw.githubusercontent.com/binary-castle/bc-ui-flutter/main/doc/assets/demo-dark.png) |
 
 <sub>The screen above is assembled entirely from bc_ui — header, card, buttons,
 tabs, list group, chips, bottom nav. Its source is
-<a href="example/lib/showcase/screens/demo_app_screen.dart"><code>example/lib/showcase/screens/demo_app_screen.dart</code></a>.</sub>
+<a href="https://github.com/binary-castle/bc-ui-flutter/blob/main/example/lib/showcase/screens/demo_app_screen.dart"><code>example/lib/showcase/screens/demo_app_screen.dart</code></a>.</sub>
 
 ## Install
 
@@ -132,17 +127,17 @@ BCToast.show(context, const BCToastData(
 
 ## Components
 
-Full props, defaults and enums for every entry: **[API reference](doc/api.md)**.
+Full props, defaults and enums for every entry: **[API reference](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md)**.
 
 | Category | Components |
 |---|---|
-| **Navigation** | [`BCAppHeader`](doc/api.md#bcappheader) · [`BCSliverAppHeader`](doc/api.md#bcsliverappheader) · [`BCHeaderIconButton`](doc/api.md#bcheadericonbutton) · [`BCBottomNav`](doc/api.md#bcbottomnav) · [`BCNavRail`](doc/api.md#bcnavrail) · [`BCNavDrawer`](doc/api.md#bcnavdrawer) · [`BCToolbar`](doc/api.md#bctoolbar) · [`BCTabs`](doc/api.md#bctabs) · [`BCTabView`](doc/api.md#bctabview) |
-| **Actions** | [`BCButton`](doc/api.md#bcbutton) · [`BCSocialAuthButton`](doc/api.md#bcsocialauthbutton) · [`BCBrandLogo`](doc/api.md#bcbrandlogo) · [`BCLinkButton`](doc/api.md#bclinkbutton) · [`BCCloseButton`](doc/api.md#bcclosebutton) · [`BCFab`](doc/api.md#bcfab) · [`BCSpeedDial`](doc/api.md#bcspeeddial) · [`BCToggleButton`](doc/api.md#bctogglebutton) · [`BCToggleButtonGroup`](doc/api.md#bctogglebuttongroup) · [`BCPressable`](doc/api.md#bcpressable) |
-| **Containers** | [`BCSurface`](doc/api.md#bcsurface) · [`BCCard`](doc/api.md#bccard) · [`BCListGroup`](doc/api.md#bclistgroup) · [`BCFlipCard`](doc/api.md#bcflipcard) · [`BCScrollShadow`](doc/api.md#bcscrollshadow) |
-| **Data display** | [`BCText`](doc/api.md#bctext) · [`BCAvatar`](doc/api.md#bcavatar) · [`BCChip`](doc/api.md#bcchip) · [`BCRibbon`](doc/api.md#bcribbon) · [`BCTagGroup`](doc/api.md#bctaggroup) · [`BCSeparator`](doc/api.md#bcseparator) · [`BCSkeleton`](doc/api.md#bcskeleton) · [`BCSpinner`](doc/api.md#bcspinner) · [`BCProgress`](doc/api.md#bcprogress) · [`BCLoadingOverlay`](doc/api.md#bcloadingoverlay) · [`BCRating`](doc/api.md#bcrating) · [`BCEmptyState`](doc/api.md#bcemptystate) |
-| **Forms** | [`BCInput`](doc/api.md#bcinput) · [`BCTextField`](doc/api.md#bctextfield) · [`BCTextArea`](doc/api.md#bctextarea) · [`BCPasswordInput`](doc/api.md#bcpasswordinput) · [`BCSearchField`](doc/api.md#bcsearchfield) · [`BCInputOTP`](doc/api.md#bcinputotp) · [`BCDateField`](doc/api.md#bcdatefield) · [`BCTimeField`](doc/api.md#bctimefield) · [`BCDateTimePicker`](doc/api.md#bcdatetimepicker) · [`BCSelect`](doc/api.md#bcselect) · [`BCControlField`](doc/api.md#bccontrolfield) |
-| **Selection** | [`BCCheckbox`](doc/api.md#bccheckbox) · [`BCRadioGroup`](doc/api.md#bcradiogroup) · [`BCSwitch`](doc/api.md#bcswitch) · [`BCSlider`](doc/api.md#bcslider) · [`BCRangeSlider`](doc/api.md#bcrangeslider) |
-| **Overlays** | [`BCDialog`](doc/api.md#bcdialog) · [`BCPopover`](doc/api.md#bcpopover) · [`BCMenu`](doc/api.md#bcmenu) · [`BCToast`](doc/api.md#bctoast) |
+| **Navigation** | [`BCAppHeader`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bcappheader) · [`BCSliverAppHeader`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bcsliverappheader) · [`BCHeaderIconButton`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bcheadericonbutton) · [`BCBottomNav`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bcbottomnav) · [`BCNavRail`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bcnavrail) · [`BCNavDrawer`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bcnavdrawer) · [`BCToolbar`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bctoolbar) · [`BCTabs`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bctabs) · [`BCTabView`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bctabview) |
+| **Actions** | [`BCButton`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bcbutton) · [`BCSocialAuthButton`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bcsocialauthbutton) · [`BCBrandLogo`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bcbrandlogo) · [`BCLinkButton`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bclinkbutton) · [`BCCloseButton`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bcclosebutton) · [`BCFab`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bcfab) · [`BCSpeedDial`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bcspeeddial) · [`BCToggleButton`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bctogglebutton) · [`BCToggleButtonGroup`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bctogglebuttongroup) · [`BCPressable`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bcpressable) |
+| **Containers** | [`BCSurface`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bcsurface) · [`BCCard`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bccard) · [`BCListGroup`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bclistgroup) · [`BCFlipCard`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bcflipcard) · [`BCScrollShadow`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bcscrollshadow) |
+| **Data display** | [`BCText`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bctext) · [`BCAvatar`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bcavatar) · [`BCChip`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bcchip) · [`BCRibbon`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bcribbon) · [`BCTagGroup`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bctaggroup) · [`BCSeparator`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bcseparator) · [`BCSkeleton`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bcskeleton) · [`BCSpinner`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bcspinner) · [`BCProgress`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bcprogress) · [`BCLoadingOverlay`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bcloadingoverlay) · [`BCRating`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bcrating) · [`BCEmptyState`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bcemptystate) |
+| **Forms** | [`BCInput`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bcinput) · [`BCTextField`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bctextfield) · [`BCTextArea`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bctextarea) · [`BCPasswordInput`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bcpasswordinput) · [`BCSearchField`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bcsearchfield) · [`BCInputOTP`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bcinputotp) · [`BCDateField`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bcdatefield) · [`BCTimeField`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bctimefield) · [`BCDateTimePicker`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bcdatetimepicker) · [`BCSelect`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bcselect) · [`BCControlField`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bccontrolfield) |
+| **Selection** | [`BCCheckbox`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bccheckbox) · [`BCRadioGroup`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bcradiogroup) · [`BCSwitch`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bcswitch) · [`BCSlider`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bcslider) · [`BCRangeSlider`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bcrangeslider) |
+| **Overlays** | [`BCDialog`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bcdialog) · [`BCPopover`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bcpopover) · [`BCMenu`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bcmenu) · [`BCToast`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bctoast) |
 
 The three pickers — `BCDateField`, `BCTimeField`, `BCDateTimePicker` — share a
 `presentation` prop (`dialog`, `popover`, `bottomSheet`), so swapping one for
@@ -186,7 +181,7 @@ DecoratedBox(
 (layered surface/overlay shadows) · `BCMotion` (springs and timings) ·
 `BCShapes` (continuous corners) · `BCSizes` · `BCDuration` · `BCBreakpoints`.
 
-See [Theme and tokens](doc/api.md#theme-and-tokens) for the full list.
+See [Theme and tokens](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#theme-and-tokens) for the full list.
 
 ## Example app
 
@@ -199,7 +194,7 @@ cd example && flutter run
 
 ## Documentation
 
-- **[API reference](doc/api.md)** — every component, prop, default and enum.
+- **[API reference](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md)** — every component, prop, default and enum.
   The prop tables are generated from the source, so they track the code.
 - `dart doc` generates the full dartdoc site from the inline documentation.
 

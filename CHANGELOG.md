@@ -1,3 +1,10 @@
+## 0.0.2
+
+* Fixed the README on pub.dev: images and repository links are absolute now.
+  pub.dev strips raw `<img>` tags and drops repo-relative links, so the banner,
+  the light/dark screenshots and every entry in the component table rendered
+  without them.
+
 ## 0.0.1
 
 First release — a Flutter port of
