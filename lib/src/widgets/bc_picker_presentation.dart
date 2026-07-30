@@ -97,10 +97,12 @@ class BCPickerPanel extends StatelessWidget {
                 shape: BCShapes.continuous(BCRadius.full),
               ),
             ),
-          if (scrollable)
-            Flexible(child: SingleChildScrollView(child: child))
-          else
-            child,
+          // Flexible either way, so content that scrolls itself — the Select's
+          // option list — learns how much room the panel actually has and
+          // shrinks to it instead of running off the bottom of the screen.
+          Flexible(
+            child: scrollable ? SingleChildScrollView(child: child) : child,
+          ),
         ],
       ),
     );
@@ -110,6 +112,13 @@ class BCPickerPanel extends StatelessWidget {
 /// Presents picker content in Flutter's modal sheet route, styled from bc_ui
 /// tokens. Going through the real route is what supplies drag-to-dismiss,
 /// fling velocity and a scrim that tracks the drag.
+///
+/// The sheet rides above the on-screen keyboard: `showModalBottomSheet` pins
+/// its child to the bottom of the screen and does nothing about the keyboard,
+/// so a sheet with a search field in it would otherwise open behind one. The
+/// bottom view inset lifts the panel clear, and the top inset caps how tall it
+/// may grow, which leaves the content — the search field and as many rows as
+/// fit — in the band between the status bar and the keyboard.
 ///
 /// Internal to the picker widgets — not exported from `bc_ui.dart`.
 Future<T?> showBCPickerSheet<T>(
@@ -126,12 +135,32 @@ Future<T?> showBCPickerSheet<T>(
     barrierColor: bc.backdrop,
     elevation: 0,
     isScrollControlled: true,
-    builder: (sheetContext) => BCPickerPanel(
-      showHandle: true,
-      roundedTopOnly: true,
-      scrollable: scrollable,
-      bottomInset: MediaQuery.viewPaddingOf(sheetContext).bottom,
-      child: builder(sheetContext),
-    ),
+    builder: (sheetContext) {
+      // MediaQuery for the keyboard — reading it is also what rebuilds this
+      // builder as the keyboard slides. The notch has to come off the view
+      // instead: the sheet route strips the top padding from the MediaQuery it
+      // hands its child, which would leave the cap below at zero and let a tall
+      // sheet run up under the status bar.
+      final media = MediaQuery.of(sheetContext);
+      final view = View.of(sheetContext);
+
+      return Padding(
+        padding: EdgeInsets.only(
+          // `viewPadding`: the notch is there whether or not the keyboard is.
+          // Only caps the height — the sheet itself is bottom-aligned.
+          top: view.viewPadding.top / view.devicePixelRatio + BCSpacing.sm,
+          bottom: media.viewInsets.bottom,
+        ),
+        child: BCPickerPanel(
+          showHandle: true,
+          roundedTopOnly: true,
+          scrollable: scrollable,
+          // `padding`, not `viewPadding`, so the home indicator is only cleared
+          // when the keyboard isn't already covering it.
+          bottomInset: media.padding.bottom,
+          child: builder(sheetContext),
+        ),
+      );
+    },
   );
 }
