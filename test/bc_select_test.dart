@@ -7,6 +7,29 @@ List<BCSelectItem<String>> _fruits([int count = 3]) => [
         BCSelectItem(value: 'v$i', label: 'Fruit $i'),
     ];
 
+/// Raises the on-screen keyboard for the rest of the test and returns the
+/// y-coordinate of its top edge — nothing the user needs to see may sit below
+/// it.
+double _showKeyboard(WidgetTester tester, {double height = 300}) {
+  final ratio = tester.view.devicePixelRatio;
+  tester.view.viewInsets = FakeViewPadding(bottom: height * ratio);
+  addTearDown(tester.view.resetViewInsets);
+  return tester.view.physicalSize.height / ratio - height;
+}
+
+/// Gives the test view the metrics of a notched phone — 402x874 at 3x, with a
+/// 59pt status bar — so safe-area behaviour can be asserted the way it lands on
+/// a real device rather than on the default 800x600 inset-free surface.
+void _useNotchedPhone(WidgetTester tester) {
+  const ratio = 3.0;
+  const notch = FakeViewPadding(top: 59 * ratio, bottom: 34 * ratio);
+  tester.view.devicePixelRatio = ratio;
+  tester.view.physicalSize = const Size(402 * ratio, 874 * ratio);
+  tester.view.viewPadding = notch;
+  tester.view.padding = notch;
+  addTearDown(tester.view.reset);
+}
+
 /// Hosts a select and keeps its value, the way a real form would.
 class _Host extends StatefulWidget {
   const _Host({required this.build});
@@ -383,6 +406,141 @@ void main() {
       await tester.tap(find.text('Fruit 2'));
       await tester.pumpAndSettle();
       expect(find.text('Fruit 2'), findsOneWidget);
+    });
+
+    testWidgets('popover keeps the search field and the rows above the '
+        'keyboard', (tester) async {
+      await tester.pumpWidget(
+        _Host(
+          build: (value, onChange) => BCSelect<String>(
+            items: _fruits(20),
+            value: value,
+            onValueChange: onChange,
+            isSearchable: true,
+          ),
+        ),
+      );
+
+      await tester.tap(find.byType(BCSelect<String>));
+      await tester.pumpAndSettle();
+
+      final keyboardTop = _showKeyboard(tester);
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.getRect(find.byType(BCSearchField)).bottom,
+        lessThanOrEqualTo(keyboardTop),
+      );
+      expect(
+        tester.getRect(find.byType(ListView)).bottom,
+        lessThanOrEqualTo(keyboardTop),
+      );
+      // Still a usable list, not a sliver of one.
+      expect(find.text('Fruit 0'), findsOneWidget);
+    });
+
+    testWidgets('the sheet rides above the keyboard', (tester) async {
+      await tester.pumpWidget(
+        _Host(
+          build: (value, onChange) => BCSelect<String>(
+            items: _fruits(20),
+            value: value,
+            onValueChange: onChange,
+            presentation: BCSelectPresentation.bottomSheet,
+            isSearchable: true,
+            listLabel: 'Fruits',
+          ),
+        ),
+      );
+
+      await tester.tap(find.byType(BCSelect<String>));
+      await tester.pumpAndSettle();
+
+      final keyboardTop = _showKeyboard(tester);
+      await tester.pumpAndSettle();
+
+      final list = tester.getRect(find.byType(ListView));
+      expect(tester.getRect(find.text('Fruits')).top, greaterThan(0));
+      expect(
+        tester.getRect(find.byType(BCSearchField)).bottom,
+        lessThanOrEqualTo(keyboardTop),
+      );
+      expect(list.bottom, lessThanOrEqualTo(keyboardTop));
+      // Enough of the list survives the keyboard to be worth scrolling.
+      expect(list.height, greaterThan(100));
+      expect(find.text('Fruit 0'), findsOneWidget);
+    });
+
+    testWidgets('the sheet keeps its header clear of the status bar',
+        (tester) async {
+      _useNotchedPhone(tester);
+      await tester.pumpWidget(
+        _Host(
+          build: (value, onChange) => BCSelect<String>(
+            // Long enough that the sheet wants more height than the band above
+            // the keyboard has, which is when it used to grow up under the
+            // notch and take the handle and the title with it.
+            items: _fruits(30),
+            value: value,
+            onValueChange: onChange,
+            presentation: BCSelectPresentation.bottomSheet,
+            isSearchable: true,
+            listLabel: 'Fruits',
+          ),
+        ),
+      );
+
+      await tester.tap(find.byType(BCSelect<String>));
+      await tester.pumpAndSettle();
+
+      final keyboardTop = _showKeyboard(tester, height: 336);
+      await tester.pumpAndSettle();
+
+      // The header survives: title first, then the search field, then the rows.
+      final title = tester.getRect(find.text('Fruits'));
+      final search = tester.getRect(find.byType(BCSearchField));
+      expect(title.top, greaterThanOrEqualTo(59));
+      expect(search.top, greaterThan(title.bottom));
+      expect(
+        tester.getRect(find.byType(ListView)).bottom,
+        lessThanOrEqualTo(keyboardTop),
+      );
+    });
+
+    testWidgets('a sheet whose list is still empty stays on screen',
+        (tester) async {
+      await tester.pumpWidget(
+        _Host(
+          build: (value, onChange) => BCSelect<String>(
+            // An async lookup starts with nothing to show — the sheet is at
+            // its shortest here, and used to open entirely behind the keyboard.
+            items: const [],
+            value: value,
+            onValueChange: onChange,
+            presentation: BCSelectPresentation.bottomSheet,
+            searchDebounce: Duration.zero,
+            onSearch: (query) async => _fruits(2),
+          ),
+        ),
+      );
+
+      await tester.tap(find.byType(BCSelect<String>));
+      await tester.pumpAndSettle();
+
+      final keyboardTop = _showKeyboard(tester);
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.getRect(find.text('No results')).bottom,
+        lessThanOrEqualTo(keyboardTop),
+      );
+
+      await tester.enterText(find.byType(BCSearchField), 'f');
+      await tester.pumpAndSettle();
+      expect(
+        tester.getRect(find.text('Fruit 1')).bottom,
+        lessThanOrEqualTo(keyboardTop),
+      );
     });
 
     testWidgets('disabled does not open', (tester) async {

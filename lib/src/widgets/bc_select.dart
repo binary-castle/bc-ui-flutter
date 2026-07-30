@@ -205,6 +205,8 @@ class _BCSelectState<T> extends State<BCSelect<T>> {
             select: widget,
             showTitle: true,
             autofocusSearch: true,
+            // Half the screen when the sheet has the room for it; the panel's
+            // own bounds trim this back as the keyboard takes the lower half.
             maxHeight: MediaQuery.sizeOf(sheetContext).height * 0.5,
             onSelected: (item) => Navigator.of(sheetContext).pop(item),
           ),

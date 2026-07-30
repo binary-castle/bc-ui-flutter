@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart' show Material, MaterialType;
 import 'package:flutter/widgets.dart';
 
@@ -28,6 +30,10 @@ class BCAnchoredOverlayController extends ChangeNotifier {
   void toggle() => _isOpen ? close() : open();
 }
 
+/// Room the preferred side must have before it is kept in preference to the
+/// side with more space.
+const double _kRoomySide = 240;
+
 /// Anchored overlay engine shared by Popover, Menu, and Select.
 ///
 /// Positions the overlay relative to the anchor with a layout delegate that
@@ -38,6 +44,13 @@ class BCAnchoredOverlayController extends ChangeNotifier {
 /// scale 0.96 → 1 + fade over 200ms and exits in 150ms, matching heroui's
 /// popup content animations; a full-screen barrier dismisses on outside
 /// taps.
+///
+/// The on-screen keyboard counts as an edge. Overlays render outside any
+/// Scaffold, so nothing resizes them out of the keyboard's way; the delegate
+/// takes the bottom view inset off the usable height itself, and the overlay
+/// re-lays-out — shrinking, or flipping above the anchor — as the keyboard
+/// comes and goes. That is what keeps a Select's search field and its rows on
+/// screen while you type.
 class BCAnchoredOverlay extends StatefulWidget {
   const BCAnchoredOverlay({
     super.key,
@@ -81,7 +94,7 @@ class BCAnchoredOverlay extends StatefulWidget {
 }
 
 class _BCAnchoredOverlayState extends State<BCAnchoredOverlay>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   final OverlayPortalController _portal = OverlayPortalController();
 
   late final AnimationController _transition = AnimationController(
@@ -91,13 +104,25 @@ class _BCAnchoredOverlayState extends State<BCAnchoredOverlay>
   );
 
   Rect _anchorRect = Rect.zero;
-  bool _preferBelow = true;
+
+  /// Height of the Overlay the portal draws into — the whole screen, keyboard
+  /// included.
+  double _viewportHeight = 0;
+
+  /// Bottom view inset: the on-screen keyboard.
+  double _bottomInset = 0;
+
+  /// Top padding: the status bar and the notch. The Overlay spans the whole
+  /// screen, so an overlay flipped above its trigger would otherwise slide
+  /// under them.
+  double _topInset = 0;
 
   @override
   void initState() {
     super.initState();
     widget.controller.addListener(_handleControllerChange);
     _transition.addStatusListener(_handleStatusChange);
+    WidgetsBinding.instance.addObserver(this);
   }
 
   @override
@@ -111,9 +136,29 @@ class _BCAnchoredOverlayState extends State<BCAnchoredOverlay>
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     widget.controller.removeListener(_handleControllerChange);
     _transition.dispose();
     super.dispose();
+  }
+
+  /// The keyboard opening or closing, or the screen rotating — each moves the
+  /// ground under an open overlay, so it is measured again.
+  @override
+  void didChangeMetrics() {
+    if (!_portal.isShowing) return;
+    // After the frame those metrics produce: the keyboard resizes the page the
+    // trigger sits in, so the anchor is only correct once it has been laid out.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_portal.isShowing) return;
+      final anchorBefore = _anchorRect;
+      final insetsBefore = (_bottomInset, _topInset);
+      _captureAnchor();
+      if (_anchorRect != anchorBefore ||
+          (_bottomInset, _topInset) != insetsBefore) {
+        setState(() {});
+      }
+    });
   }
 
   void _handleControllerChange() {
@@ -141,19 +186,39 @@ class _BCAnchoredOverlayState extends State<BCAnchoredOverlay>
     if (box == null || !box.hasSize) return;
     final topLeft = box.localToGlobal(Offset.zero, ancestor: overlay);
     _anchorRect = topLeft & box.size;
-
-    final screenHeight =
+    _viewportHeight =
         overlay?.size.height ?? MediaQuery.sizeOf(context).height;
-    final spaceBelow = screenHeight - _anchorRect.bottom;
-    final spaceAbove = _anchorRect.top;
 
-    _preferBelow = switch (widget.placement) {
-      BCOverlayPlacement.bottom => true,
-      BCOverlayPlacement.top => false,
-      // Flip up when below-space is tight and above has more room.
-      BCOverlayPlacement.auto =>
-        spaceBelow >= 240 || spaceBelow >= spaceAbove,
-    };
+    // The keyboard, read off the view rather than an ambient MediaQuery.
+    // Neither MediaQuery in reach reports it: a Scaffold with
+    // resizeToAvoidBottomInset on zeroes the bottom inset throughout its body,
+    // and an OverlayPortal's overlay child inherits from the anchor's position
+    // in the tree, so it sees that same zero — while being drawn in the
+    // Overlay, where the keyboard very much does cover it.
+    final view = View.of(context);
+    _bottomInset = view.viewInsets.bottom / view.devicePixelRatio;
+    // `viewPadding` for the top: the notch is there whether or not the keyboard
+    // is, and unlike `padding` it does not shift when the keyboard opens.
+    _topInset = view.viewPadding.top / view.devicePixelRatio;
+  }
+
+  /// Which side of the anchor the overlay ends up on: the requested side while
+  /// it has room, otherwise whichever side has more. The keyboard is taken off
+  /// the space below, so a trigger sitting mid-screen opens upward instead of
+  /// behind it.
+  bool _resolvePlaceBelow() {
+    final below = _viewportHeight -
+        _bottomInset -
+        _anchorRect.bottom -
+        widget.gap -
+        widget.screenMargin;
+    final above =
+        _anchorRect.top - _topInset - widget.gap - widget.screenMargin;
+
+    if (widget.placement == BCOverlayPlacement.top) {
+      return !(above >= _kRoomySide || above >= below);
+    }
+    return below >= _kRoomySide || below >= above;
   }
 
   @override
@@ -161,7 +226,8 @@ class _BCAnchoredOverlayState extends State<BCAnchoredOverlay>
     return OverlayPortal(
       controller: _portal,
       overlayChildBuilder: (overlayContext) {
-        final scaleOrigin = Alignment(0, _preferBelow ? -1 : 1);
+        final placeBelow = _resolvePlaceBelow();
+        final scaleOrigin = Alignment(0, placeBelow ? -1 : 1);
 
         return Stack(
           children: [
@@ -182,11 +248,13 @@ class _BCAnchoredOverlayState extends State<BCAnchoredOverlay>
               child: CustomSingleChildLayout(
                 delegate: _AnchoredOverlayLayoutDelegate(
                   anchorRect: _anchorRect,
-                  preferBelow: _preferBelow,
+                  placeBelow: placeBelow,
                   alignment: widget.alignment,
                   gap: widget.gap,
                   margin: widget.screenMargin,
                   matchAnchorWidth: widget.matchAnchorWidth,
+                  bottomInset: _bottomInset,
+                  topInset: _topInset,
                 ),
                 // Overlays render outside any Scaffold; a transparent
                 // Material supplies the correct DefaultTextStyle (no yellow
@@ -220,27 +288,44 @@ class _BCAnchoredOverlayState extends State<BCAnchoredOverlay>
 class _AnchoredOverlayLayoutDelegate extends SingleChildLayoutDelegate {
   _AnchoredOverlayLayoutDelegate({
     required this.anchorRect,
-    required this.preferBelow,
+    required this.placeBelow,
     required this.alignment,
     required this.gap,
     required this.margin,
     required this.matchAnchorWidth,
+    this.bottomInset = 0,
+    this.topInset = 0,
   });
 
   final Rect anchorRect;
-  final bool preferBelow;
+
+  /// The side already resolved by [BCAnchoredOverlay], so the height the child
+  /// is given and the offset it is placed at agree.
+  final bool placeBelow;
+
   final BCOverlayAlignment alignment;
   final double gap;
   final double margin;
   final bool matchAnchorWidth;
 
+  /// Height at the bottom of the Overlay that the keyboard covers.
+  final double bottomInset;
+
+  /// Height at the top of the Overlay taken by the status bar and the notch.
+  final double topInset;
+
   @override
   BoxConstraints getConstraintsForChild(BoxConstraints constraints) {
     final maxWidth = constraints.maxWidth - 2 * margin;
-    final spaceBelow = constraints.maxHeight - anchorRect.bottom - gap;
-    final spaceAbove = anchorRect.top - gap;
-    final maxHeight = ((preferBelow ? spaceBelow : spaceAbove) - margin)
-        .clamp(48.0, constraints.maxHeight - 2 * margin);
+    // The keyboard and the status bar are edges like any other: the overlay may
+    // not grow into either.
+    final viewportHeight = constraints.maxHeight - bottomInset - topInset;
+    final spaceBelow =
+        constraints.maxHeight - bottomInset - anchorRect.bottom - gap - margin;
+    final spaceAbove = anchorRect.top - topInset - gap - margin;
+    final double heightCap = math.max(48.0, viewportHeight - 2 * margin);
+    final double maxHeight =
+        (placeBelow ? spaceBelow : spaceAbove).clamp(48.0, heightCap);
 
     return BoxConstraints(
       minWidth: matchAnchorWidth
@@ -263,25 +348,27 @@ class _AnchoredOverlayLayoutDelegate extends SingleChildLayoutDelegate {
         anchorRect.center.dx - childSize.width / 2,
       BCOverlayAlignment.end => anchorRect.right - childSize.width,
     };
-    x = x.clamp(margin, size.width - childSize.width - margin);
+    x = x.clamp(margin, math.max(margin, size.width - childSize.width - margin));
 
-    // Vertical: preferred side, flipped if the overlay wouldn't fit,
-    // then clamped.
+    // Vertical: resolved side, flipped if the overlay still wouldn't fit, then
+    // clamped between the status bar and the keyboard.
+    final topLimit = topInset + margin;
+    final bottomLimit = size.height - bottomInset - margin;
     double y;
-    if (preferBelow) {
+    if (placeBelow) {
       y = anchorRect.bottom + gap;
-      if (y + childSize.height > size.height - margin) {
+      if (y + childSize.height > bottomLimit) {
         final above = anchorRect.top - gap - childSize.height;
-        if (above >= margin) y = above;
+        if (above >= topLimit) y = above;
       }
     } else {
       y = anchorRect.top - gap - childSize.height;
-      if (y < margin) {
+      if (y < topLimit) {
         final below = anchorRect.bottom + gap;
-        if (below + childSize.height <= size.height - margin) y = below;
+        if (below + childSize.height <= bottomLimit) y = below;
       }
     }
-    y = y.clamp(margin, size.height - childSize.height - margin);
+    y = y.clamp(topLimit, math.max(topLimit, bottomLimit - childSize.height));
 
     return Offset(x, y);
   }
@@ -289,10 +376,12 @@ class _AnchoredOverlayLayoutDelegate extends SingleChildLayoutDelegate {
   @override
   bool shouldRelayout(_AnchoredOverlayLayoutDelegate oldDelegate) {
     return anchorRect != oldDelegate.anchorRect ||
-        preferBelow != oldDelegate.preferBelow ||
+        placeBelow != oldDelegate.placeBelow ||
         alignment != oldDelegate.alignment ||
         gap != oldDelegate.gap ||
         margin != oldDelegate.margin ||
-        matchAnchorWidth != oldDelegate.matchAnchorWidth;
+        matchAnchorWidth != oldDelegate.matchAnchorWidth ||
+        bottomInset != oldDelegate.bottomInset ||
+        topInset != oldDelegate.topInset;
   }
 }
