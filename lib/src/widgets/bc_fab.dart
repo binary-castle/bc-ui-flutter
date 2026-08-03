@@ -183,7 +183,18 @@ class _BCSpeedDialState extends State<BCSpeedDial>
 
   @override
   Widget build(BuildContext context) {
+    // The root overlay, not the nearest one. A speed dial usually sits in a
+    // screen that is itself inside a nested `Navigator` — a shell branch, a
+    // tab view — whose overlay covers only that screen's slot. The backdrop is
+    // meant to be app-modal, so anchored there it stops short of any
+    // surrounding chrome (a bottom navigation bar, say), which then paints
+    // over the open dial undimmed and still takes taps.
+    //
+    // The action pills keep tracking the button either way:
+    // `CompositedTransformFollower` works off the layer tree, not the widget
+    // tree, so it does not care which overlay hosts them.
     return OverlayPortal(
+      overlayLocation: OverlayChildLocation.rootOverlay,
       controller: _portal,
       overlayChildBuilder: _buildOverlay,
       child: CompositedTransformTarget(
