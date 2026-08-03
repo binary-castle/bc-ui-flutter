@@ -2029,6 +2029,95 @@ void main() {
       expect(find.text('Details'), findsNothing);
     });
 
+    /// The `default`-token circle painted by the [BCHeaderIconButton] carrying
+    /// [icon]. The fill is [BCPressable]'s `background`, a sibling of the icon
+    /// rather than an ancestor, so this goes up to the button and back down.
+    Finder filledCircleFor(IconData icon) {
+      final fill = BCThemeExtension.light().defaultColor;
+      return find.descendant(
+        of: find.ancestor(
+          of: find.byIcon(icon),
+          matching: find.byType(BCHeaderIconButton),
+        ),
+        matching: find.byWidgetPredicate(
+          (w) =>
+              w is DecoratedBox &&
+              w.decoration is ShapeDecoration &&
+              (w.decoration as ShapeDecoration).color == fill,
+        ),
+      );
+    }
+
+    testWidgets('filledIconButtons fills the actions and the implied back button',
+        (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: BCTheme.light(),
+          home: Builder(
+            builder: (context) => Scaffold(
+              body: Center(
+                child: BCButton(
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => Scaffold(
+                        appBar: BCAppHeader(
+                          title: const Text('Details'),
+                          filledIconButtons: true,
+                          actions: [
+                            BCHeaderIconButton(
+                              icon: const Icon(Icons.search),
+                              onPressed: () {},
+                            ),
+                          ],
+                        ),
+                        body: const SizedBox.shrink(),
+                      ),
+                    ),
+                  ),
+                  child: const Text('Open'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+
+      // The back button is built by the header itself, so it is the one that
+      // regresses if the flag stops reaching the leading slot.
+      expect(filledCircleFor(Icons.arrow_back_ios_new), findsOneWidget);
+      expect(filledCircleFor(Icons.search), findsOneWidget);
+    });
+
+    testWidgets('a button sets filled itself and wins over the header',
+        (tester) async {
+      await tester.pumpWidget(
+        headerApp(
+          BCAppHeader(
+            title: const Text('Inbox'),
+            automaticallyImplyLeading: false,
+            filledIconButtons: true,
+            actions: [
+              BCHeaderIconButton(
+                icon: const Icon(Icons.search),
+                filled: false,
+                onPressed: () {},
+              ),
+              BCHeaderIconButton(
+                icon: const Icon(Icons.more_vert),
+                onPressed: () {},
+              ),
+            ],
+          ),
+        ),
+      );
+
+      expect(filledCircleFor(Icons.search), findsNothing);
+      expect(filledCircleFor(Icons.more_vert), findsOneWidget);
+    });
+
     testWidgets('leading, title and actions share one vertical center',
         (tester) async {
       // NavigationToolbar hands the leading slot the full bar height at y=0,

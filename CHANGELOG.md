@@ -1,3 +1,19 @@
+## 0.2.0
+
+**App header**
+
+* `filledIconButtons` on `BCAppHeader` and `BCSliverAppHeader` renders every
+  `BCHeaderIconButton` in the leading and actions slots filled, so a screen
+  picks the style once instead of at each button. It reaches the back button
+  the header implies, which no call site could style before.
+* **Breaking:** `BCHeaderIconButton.filled` is now `bool?` and defaults to
+  null, which defers to the enclosing header (and to false where there is
+  none). Passing `filled: true` or `filled: false` is unchanged and still
+  wins over the header; only code that *reads* the field needs a null check.
+* The header's inherited style is now installed unconditionally. It used to
+  be skipped unless `foregroundColor` was set, so a header that only wanted
+  the default colours had no channel to its buttons at all.
+
 ## 0.1.0
 
 **Select**
