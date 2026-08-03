@@ -62,6 +62,7 @@ class BCAppHeader extends StatefulWidget implements PreferredSizeWidget {
     this.variant = BCAppHeaderVariant.blurred,
     this.centerTitle = false,
     this.automaticallyImplyLeading = true,
+    this.filledIconButtons = false,
     this.showSeparator = true,
     this.separatorOnScrollOnly = true,
     this.materializeOnScroll = false,
@@ -97,6 +98,12 @@ class BCAppHeader extends StatefulWidget implements PreferredSizeWidget {
   final BCAppHeaderVariant variant;
   final bool centerTitle;
   final bool automaticallyImplyLeading;
+
+  /// Renders every [BCHeaderIconButton] in the leading and actions slots
+  /// [BCHeaderIconButton.filled], including the back button this header
+  /// implies — so a screen picks the style once instead of at each button.
+  /// A button that sets `filled` itself still wins.
+  final bool filledIconButtons;
 
   /// Draws the hairline [BCThemeExtension.border] separator along the bottom
   /// edge (never used by [BCAppHeaderVariant.floating]).
@@ -203,6 +210,7 @@ class _BCAppHeaderState extends State<BCAppHeader> {
       actions: widget.actions,
       centerTitle: widget.centerTitle,
       automaticallyImplyLeading: widget.automaticallyImplyLeading,
+      filledIconButtons: widget.filledIconButtons,
       foregroundColor: widget.foregroundColor,
       height: widget.toolbarHeight,
     );
@@ -375,6 +383,7 @@ class _BCHeaderToolbar extends StatelessWidget {
     this.actions = const [],
     this.centerTitle = false,
     this.automaticallyImplyLeading = true,
+    this.filledIconButtons = false,
     this.titleOpacity = 1,
     this.foregroundColor,
     required this.height,
@@ -386,6 +395,7 @@ class _BCHeaderToolbar extends StatelessWidget {
   final List<Widget> actions;
   final bool centerTitle;
   final bool automaticallyImplyLeading;
+  final bool filledIconButtons;
 
   /// Used by the large-title header to fade the compact title in.
   final double titleOpacity;
@@ -408,6 +418,7 @@ class _BCHeaderToolbar extends StatelessWidget {
                 : Icons.arrow_back_ios_new,
           ),
           iconSize: 20,
+          filled: filledIconButtons,
           semanticLabel: (route?.fullscreenDialog ?? false) ? 'Close' : 'Back',
           onPressed: () => Navigator.maybePop(context),
         );
@@ -480,27 +491,37 @@ class _BCHeaderToolbar extends StatelessWidget {
       ),
     );
 
-    if (onColor == null) return toolbar;
-    return _BCHeaderForeground(color: onColor, child: toolbar);
+    // Always inserted, even with no foreground override: [filledIconButtons]
+    // travels the same channel, and an action is an opaque widget the caller
+    // supplied — context is the only way to reach the buttons inside it.
+    return _BCHeaderStyle(
+      color: onColor,
+      filled: filledIconButtons,
+      child: toolbar,
+    );
   }
 }
 
-/// Carries [BCAppHeader.foregroundColor] down to the [BCHeaderIconButton]s in
-/// the leading/actions slots.
-class _BCHeaderForeground extends InheritedWidget {
-  const _BCHeaderForeground({required this.color, required super.child});
+/// Carries [BCAppHeader.foregroundColor] and [BCAppHeader.filledIconButtons]
+/// down to the [BCHeaderIconButton]s in the leading/actions slots.
+class _BCHeaderStyle extends InheritedWidget {
+  const _BCHeaderStyle({
+    this.color,
+    required this.filled,
+    required super.child,
+  });
 
-  final Color color;
+  final Color? color;
+  final bool filled;
 
-  static Color? maybeOf(BuildContext context) {
-    return context
-        .dependOnInheritedWidgetOfExactType<_BCHeaderForeground>()
-        ?.color;
-  }
+  /// Returns the widget rather than a single value, so a button resolves both
+  /// of its inherited defaults with one dependency registration.
+  static _BCHeaderStyle? maybeOf(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<_BCHeaderStyle>();
 
   @override
-  bool updateShouldNotify(_BCHeaderForeground oldWidget) =>
-      color != oldWidget.color;
+  bool updateShouldNotify(_BCHeaderStyle oldWidget) =>
+      color != oldWidget.color || filled != oldWidget.filled;
 }
 
 /// A round 40px icon button for [BCAppHeader] leading/action slots.
@@ -513,7 +534,7 @@ class BCHeaderIconButton extends StatelessWidget {
     super.key,
     required this.icon,
     this.onPressed,
-    this.filled = false,
+    this.filled,
     this.size = 40,
     this.iconSize = 22,
     this.color,
@@ -528,7 +549,11 @@ class BCHeaderIconButton extends StatelessWidget {
   final VoidCallback? onPressed;
 
   /// Paints a circle behind the icon, so it stays legible over photos.
-  final bool filled;
+  ///
+  /// Null defers to the enclosing header's [BCAppHeader.filledIconButtons],
+  /// and false where there is none — so a header can set the style for all of
+  /// its buttons while a single button still opts in or out.
+  final bool? filled;
 
   final double size;
   final double iconSize;
@@ -554,8 +579,9 @@ class BCHeaderIconButton extends StatelessWidget {
     final bc = context.bcTheme;
     const shape = CircleBorder();
 
-    final iconColor =
-        color ?? _BCHeaderForeground.maybeOf(context) ?? bc.foreground;
+    final headerStyle = _BCHeaderStyle.maybeOf(context);
+    final iconColor = color ?? headerStyle?.color ?? bc.foreground;
+    final isFilled = filled ?? headerStyle?.filled ?? false;
 
     Widget content = Center(
       child: IconTheme.merge(
@@ -610,7 +636,7 @@ class BCHeaderIconButton extends StatelessWidget {
       onPressed: isDisabled ? null : onPressed,
       enabled: !isDisabled,
       shape: shape,
-      background: filled
+      background: isFilled
           ? DecoratedBox(
               decoration: ShapeDecoration(
                 color: backgroundColor ?? bc.defaultColor,
@@ -618,7 +644,7 @@ class BCHeaderIconButton extends StatelessWidget {
               ),
             )
           : null,
-      highlightColor: filled ? bc.defaultHover : null,
+      highlightColor: isFilled ? bc.defaultHover : null,
       child: SizedBox(width: size, height: size, child: content),
     );
 
@@ -664,6 +690,7 @@ class BCSliverAppHeader extends StatelessWidget {
     this.bottomHeight = 48,
     this.variant = BCAppHeaderVariant.blurred,
     this.automaticallyImplyLeading = true,
+    this.filledIconButtons = false,
     this.showSeparator = true,
     this.backgroundColor,
     this.foregroundColor,
@@ -689,6 +716,9 @@ class BCSliverAppHeader extends StatelessWidget {
   final double bottomHeight;
   final BCAppHeaderVariant variant;
   final bool automaticallyImplyLeading;
+
+  /// See [BCAppHeader.filledIconButtons].
+  final bool filledIconButtons;
   final bool showSeparator;
   final Color? backgroundColor;
 
@@ -725,6 +755,7 @@ class BCSliverAppHeader extends StatelessWidget {
         bottomHeight: resolvedBottomHeight,
         variant: variant,
         automaticallyImplyLeading: automaticallyImplyLeading,
+        filledIconButtons: filledIconButtons,
         showSeparator: showSeparator,
         backgroundColor: backgroundColor,
         foregroundColor: foregroundColor,
@@ -749,6 +780,7 @@ class _BCLargeTitleDelegate extends SliverPersistentHeaderDelegate {
     required this.bottomHeight,
     required this.variant,
     required this.automaticallyImplyLeading,
+    required this.filledIconButtons,
     required this.showSeparator,
     required this.backgroundColor,
     required this.foregroundColor,
@@ -768,6 +800,7 @@ class _BCLargeTitleDelegate extends SliverPersistentHeaderDelegate {
   final double bottomHeight;
   final BCAppHeaderVariant variant;
   final bool automaticallyImplyLeading;
+  final bool filledIconButtons;
   final bool showSeparator;
   final Color? backgroundColor;
   final Color? foregroundColor;
@@ -796,6 +829,7 @@ class _BCLargeTitleDelegate extends SliverPersistentHeaderDelegate {
       leading: leading,
       actions: actions,
       automaticallyImplyLeading: automaticallyImplyLeading,
+      filledIconButtons: filledIconButtons,
       titleOpacity: compactOpacity,
       foregroundColor: foregroundColor,
       height: toolbarHeight,
@@ -905,6 +939,7 @@ class _BCLargeTitleDelegate extends SliverPersistentHeaderDelegate {
         bottomHeight != oldDelegate.bottomHeight ||
         variant != oldDelegate.variant ||
         automaticallyImplyLeading != oldDelegate.automaticallyImplyLeading ||
+        filledIconButtons != oldDelegate.filledIconButtons ||
         showSeparator != oldDelegate.showSeparator ||
         backgroundColor != oldDelegate.backgroundColor ||
         foregroundColor != oldDelegate.foregroundColor ||

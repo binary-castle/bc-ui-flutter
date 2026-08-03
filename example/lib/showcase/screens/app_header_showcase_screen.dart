@@ -31,6 +31,34 @@ class AppHeaderShowcaseScreen extends StatelessWidget {
           ),
         ),
         UsageVariant(
+          title: 'Filled icon buttons',
+          builder: (context) => const _HeaderCanvas(
+            header: BCAppHeader(
+              // Set once on the header instead of on each button, and it
+              // reaches the back button the header implies too. The overflow
+              // opts out on its own to show that a button still wins.
+              filledIconButtons: true,
+              title: Text('Inbox'),
+              leading: BCHeaderIconButton(
+                icon: Icon(Icons.arrow_back_ios_new),
+                iconSize: 20,
+                onPressed: _noop,
+              ),
+              actions: [
+                BCHeaderIconButton(
+                  icon: Icon(Icons.search),
+                  onPressed: _noop,
+                ),
+                BCHeaderIconButton(
+                  icon: Icon(Icons.more_horiz),
+                  filled: false,
+                  onPressed: _noop,
+                ),
+              ],
+            ),
+          ),
+        ),
+        UsageVariant(
           title: 'Solid',
           builder: (context) => const _HeaderCanvas(
             header: BCAppHeader(
