@@ -1,3 +1,13 @@
+## 0.2.1
+
+**Speed dial**
+
+* `BCSpeedDial` opens into the root overlay rather than the nearest one. Inside
+  a nested `Navigator` — a shell branch, a tab view — the nearest overlay
+  covers only that screen's slot, so the backdrop stopped short of any
+  surrounding chrome: a bottom navigation bar kept painting over the open dial,
+  undimmed, and still took taps.
+
 ## 0.2.0
 
 **App header**
