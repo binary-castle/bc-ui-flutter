@@ -1,3 +1,26 @@
+## 0.3.0
+
+**Accordion**
+
+* `BCAccordion` ports heroui-native's Accordion: a column of collapsible
+  sections, one open at a time or several with
+  `selectionMode: BCAccordionSelectionMode.multiple`. Compose each section
+  from `BCAccordionItem`, `BCAccordionTrigger` and `BCAccordionContent`;
+  `variant: BCAccordionVariant.surface` wraps the stack in a rounded surface
+  and insets the hairline separators, and `hideSeparator` drops them.
+* State is yours: pass `value` + `onValueChange`, or hand it a
+  `BCAccordionController` — heroui's uncontrolled `defaultValue` is that
+  controller's `initialValue`. `isCollapsible: false` keeps whatever is open
+  from closing.
+* Content springs open on heroui's layout-transition spring while it fades in
+  over 200ms, and the chevron rotates counter-clockwise to match. The body is
+  built on first expand and dropped once a collapse settles, so lift any state
+  that lives inside it. Reduced-motion settings skip all three animations.
+* `BCAccordionIndicator` renders the chevron; give it a `child` to replace it,
+  in which case it is not rotated for you — read the state with
+  `BCAccordionItem.isExpandedOf(context)`, the equivalent of heroui's
+  `useAccordionItem()` hook.
+
 ## 0.2.1
 
 **Speed dial**

@@ -1,5 +1,6 @@
 import 'package:bc_ui/bc_ui.dart';
 import 'package:example/main.dart' show ThemeToggleButton;
+import 'package:example/showcase/screens/accordion_showcase_screen.dart';
 import 'package:example/showcase/screens/app_header_showcase_screen.dart';
 import 'package:example/showcase/screens/avatar_showcase_screen.dart';
 import 'package:example/showcase/screens/bottom_nav_showcase_screen.dart';
@@ -59,6 +60,7 @@ class ComponentEntry {
 /// `helpers/data/components.ts`, one route per component, alphabetical.
 final List<ComponentEntry> componentRegistry = [
   ComponentEntry('★ Demo app screen', (_) => const DemoAppScreen()),
+  ComponentEntry('Accordion', (_) => const AccordionShowcaseScreen()),
   ComponentEntry('AppHeader', (_) => const AppHeaderShowcaseScreen()),
   ComponentEntry('Avatar', (_) => const AvatarShowcaseScreen()),
   ComponentEntry('BottomNav', (_) => const BottomNavShowcaseScreen()),

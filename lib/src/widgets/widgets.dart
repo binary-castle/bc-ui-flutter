@@ -1,3 +1,4 @@
+export 'bc_accordion.dart';
 export 'bc_app_header.dart';
 export 'bc_avatar.dart';
 export 'bc_bottom_nav.dart';
