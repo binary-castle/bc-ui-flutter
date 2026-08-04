@@ -1,3 +1,51 @@
+## 0.4.0
+
+**Phone field**
+
+* `BCPhoneField` — an international phone input. The field's prefix is a
+  tappable flag and dial code that opens the searchable country list, and the
+  number groups itself as you type.
+* Leave `initialCountry` null and the field opens on the device's own region,
+  the way a web form reads `navigator.language` — a phone set to Bangladesh
+  opens on Bangladesh. `fallbackCountry` covers a device that reports no
+  usable region (a bare `en` locale, or a UN M.49 region like `es_419`), and
+  `BCPhoneField.deviceCountry()` exposes the lookup for your own state. This
+  is the phone's *configured* region, not where it physically is.
+* Validation is libPhoneNumber's metadata rather than a regex, so it knows
+  each country's real lengths and prefixes: `+1 555 000 0000` is rejected
+  where a digit count would pass it. `onChanged` hands back a `BCPhoneNumber`
+  with `e164`, `national`, `international`, `isoCode` and `isValid` on every
+  keystroke; `onValidityChanged` fires only when validity flips, so a submit
+  button can be driven straight from it.
+* Nothing is blocked while you type — a half-typed number is not an error, so
+  the message waits for blur (or for a caller-supplied `errorText`, which
+  always wins). `invalidNumberText: null` keeps the field silent and reports
+  through the callback only.
+* The country's trunk prefix is dropped as you type, because it is not part
+  of an international number: a UK number beside `+44` is `7400 123456`,
+  never `07400 123456`.
+* The picker is authoritative about the country. `+1` covers 25 countries and
+  no parser can tell a US number from a Canadian one, so whatever the user
+  picks wins over what the metadata guesses.
+* **This adds bc_ui's first runtime dependency**, `phone_numbers_parser`.
+  It is pure Dart with no platform channels, and its own only dependency is
+  `meta`.
+
+**Select**
+
+* `triggerBuilder` replaces a `BCSelect`'s trigger wholesale while keeping its
+  press feedback, tap handling, disabled dimming and popover anchoring.
+* `matchTriggerWidth` (default `true`, unchanged behaviour) stops a narrow
+  custom trigger from squeezing the popover list to its own width.
+* `triggerFeedback` (default `BCPressFeedback.scale`, unchanged behaviour)
+  because the scale is width-compensated and pops harder on a small inline
+  trigger than on the default one.
+
+**Input**
+
+* `autofillHints` on `BCInput`, forwarded to the underlying field. Without it
+  the OS keychain and iOS's one-tap SMS code were unreachable.
+
 ## 0.3.0
 
 **Accordion**

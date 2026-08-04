@@ -84,7 +84,7 @@ from memory, and if a component isn't listed here it isn't part of bc_ui.
 
 <!-- BEGIN GENERATED: catalog -->
 
-Generated from bc_ui 0.3.0.
+Generated from bc_ui 0.4.0.
 
 | Read this file | For these components |
 |---|---|
@@ -94,7 +94,7 @@ Generated from bc_ui 0.3.0.
 | `references/actions.md` | `BCButton`, `BCSocialAuthButton`, `BCBrandLogo`, `BCLinkButton`, `BCCloseButton`, `BCFab`, `BCSpeedDial`, `BCToggleButton`, `BCToggleButtonGroup`, `BCPressable` |
 | `references/containers.md` | `BCSurface`, `BCCard`, `BCListGroup`, `BCAccordion`, `BCFlipCard`, `BCScrollShadow` |
 | `references/data-display.md` | `BCText`, `BCAvatar`, `BCChip`, `BCRibbon`, `BCTagGroup`, `BCSeparator`, `BCSkeleton`, `BCSpinner`, `BCProgress`, `BCLoadingOverlay`, `BCRating`, `BCEmptyState` |
-| `references/forms.md` | `BCInput`, `BCTextField`, `BCTextArea`, `BCPasswordInput`, `BCSearchField`, `BCInputOTP`, `BCSelect`, `BCControlField` |
+| `references/forms.md` | `BCInput`, `BCTextField`, `BCTextArea`, `BCPasswordInput`, `BCSearchField`, `BCInputOTP`, `BCPhoneField`, `BCSelect`, `BCControlField` |
 | `references/pickers.md` | `BCDateField`, `BCTimeField`, `BCDateTimePicker`, `BCDateTimeWheel`, `BCCalendar`, `BCTimeWheel` |
 | `references/selection.md` | `BCCheckbox`, `BCRadioGroup`, `BCSwitch`, `BCSlider`, `BCRangeSlider` |
 | `references/overlays.md` | `BCDialog`, `BCPopover`, `BCMenu`, `BCToast` |

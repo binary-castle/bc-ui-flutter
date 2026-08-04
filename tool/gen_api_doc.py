@@ -191,7 +191,7 @@ CATALOG = [
         'BCInput', 'BCTextField', 'BCTextArea', 'BCPasswordInput',
         'BCSearchField', 'BCInputOTP', 'BCDateField', 'BCTimeField',
         'BCDateTimePicker', 'BCDateTimeWheel', 'BCCalendar', 'BCTimeWheel',
-        'BCSelect', 'BCControlField',
+        'BCPhoneField', 'BCSelect', 'BCControlField',
     ]),
     ('Selection', [
         'BCCheckbox', 'BCRadioGroup', 'BCSwitch', 'BCSlider', 'BCRangeSlider',
@@ -251,7 +251,8 @@ SUMMARY = {
     'BCTimeWheel': 'The hour / minute (and AM/PM) wheels behind `BCTimeField`. Usable on its own.',
     'BCDateTimePicker': 'Date **and** time in one field: day, hour, minute (and AM/PM) wheels presented in a popover, a dialog or a bottom sheet, with built-in label, description and error slots.',
     'BCDateTimeWheel': 'The wheels behind `BCDateTimePicker`, usable on their own to embed day/time selection in a form or a sheet of your own.',
-    'BCSelect': "Dropdown select with three presentations — an anchored popover, a bottom sheet, or a spinning wheel — plus search and pagination hooks for lists too long to scroll. `isSearchable` filters locally; `onSearch` hands the lookup to you (debounced and awaited, so it can hit the network); `onLoadMore` fires as the list nears its end. Rows take `leading`/`trailing` slots, a per-item `onTap` and `isDisabled`, or hand the whole row to `itemBuilder`.",
+    'BCPhoneField': "International phone input: a tappable flag and dial code in the field's prefix opening a searchable country list, and a number that groups itself as you type. Leave `initialCountry` null and it opens on the device's own region, the way a web form reads `navigator.language`. Validation is libPhoneNumber's, not a regex — it knows each country's real lengths and prefixes, so `+1 555 000 0000` comes back invalid. Nothing is blocked while you type; `onChanged` reports a `BCPhoneNumber` with `isValid` on every keystroke and the message waits for blur. The trunk prefix is dropped as you type, because it is not part of an international number.",
+    'BCSelect': "Dropdown select with three presentations — an anchored popover, a bottom sheet, or a spinning wheel — plus search and pagination hooks for lists too long to scroll. `isSearchable` filters locally; `onSearch` hands the lookup to you (debounced and awaited, so it can hit the network); `onLoadMore` fires as the list nears its end. Rows take `leading`/`trailing` slots, a per-item `onTap` and `isDisabled`, or hand the whole row to `itemBuilder`. `triggerBuilder` replaces the trigger itself — pair it with `matchTriggerWidth: false` when the replacement is narrower than its list.",
     'BCControlField': 'Row that pairs a control (switch, checkbox, radio) with a label and description.',
     'BCCheckbox': 'Checkbox with a spring-animated indicator.',
     'BCRadioGroup': 'Radio group; wraps `BCRadio` children and owns the selected value.',
@@ -670,6 +671,34 @@ BCDateTimePicker(
     BCSelectItem(value: 'pro', label: 'Pro', description: r'$12 / month'),
   ],
 );''',
+    'BCPhoneField': '''// No initialCountry: opens on the device's own region,
+// falling back to fallbackCountry when it reports none.
+BCPhoneField(
+  label: 'Mobile',
+  fallbackCountry: IsoCode.BD,
+  onChanged: (value) => setState(() => _phone = value),
+);
+
+BCPhoneField(
+  label: 'Mobile',
+  isRequired: true,
+  initialCountry: IsoCode.BD,
+  // The two or three countries your users actually live in, pinned on top.
+  preferredCountries: const [IsoCode.BD, IsoCode.GB, IsoCode.US],
+  onChanged: (value) => setState(() => _phone = value),
+  onValidityChanged: (valid) => setState(() => _canSubmit = valid),
+);
+
+// _phone.e164        -> '+8801712345678', what you send to a server
+// _phone.national    -> '1712-345678', what the field shows
+// _phone.isoCode     -> IsoCode.BD, whatever the picker says
+// _phone.isValid     -> checked against libPhoneNumber's metadata
+
+// Restrict the list, and let the caller name the countries.
+BCPhoneField(
+  countries: const [IsoCode.BD, IsoCode.IN, IsoCode.PK],
+  formatCountryName: (isoCode, name) => isoCode == IsoCode.US ? 'USA' : name,
+);''',
     'BCSelect': '''// The default: an anchored list under the trigger.
 BCSelect<String>(
   placeholder: 'Select a country',
@@ -832,6 +861,23 @@ BCToast.show(context, const BCToastData(
 }
 
 MEMBERS = {
+    'BCPhoneField': [
+        ('static IsoCode? deviceCountry()', "The device's configured region — `en_GB` gives `IsoCode.GB`, and null when no preferred locale carries one the parser knows. What `initialCountry` uses when you leave it null. This is the phone's configured region, not where it physically is."),
+        ('static String flagEmoji(IsoCode isoCode)', 'The flag as a regional-indicator emoji pair — `IsoCode.BD` becomes 🇧🇩.'),
+    ],
+    'BCPhoneNumber': [
+        ('const BCPhoneNumber({required IsoCode isoCode, required String nsn})', 'The `nsn` is the national significant number in international form — digits only, no trunk prefix, no dial code.'),
+        ('factory BCPhoneNumber.parse(String text, {IsoCode? country})', 'Reads a number in any shape and never throws; an unreadable string comes back as the digits it could salvage under `country` (or `IsoCode.US`).'),
+        ('IsoCode isoCode', 'The country. Authoritative — `+1` covers 25 countries, so the picker decides, not the parser.'),
+        ('String nsn', 'National significant number, digits only.'),
+        ('String dialCode', "Without the plus — `880`."),
+        ('String e164', "`+8801712345678`. Empty while `nsn` is."),
+        ('String national', 'Grouped the way the country writes it — `(201) 555-0123`.'),
+        ('String international', '`+880 1712-345678`.'),
+        ('bool isEmpty', 'Whether `nsn` is empty.'),
+        ('bool isValid', "Length *and* pattern, against libPhoneNumber's metadata."),
+        ('BCPhoneNumber copyWith({IsoCode? isoCode, String? nsn})', 'A copy with either half replaced.'),
+    ],
     'BCTabsController': [
         ('BCTabsController({required List<T> values, T? initialValue})', 'Create one per tab bar + view pair and dispose it with your `State`.'),
         ('T value', 'The settled tab.'),
@@ -894,6 +940,7 @@ SUBPARTS = {
         'BCInputOTPSlotValue', 'BCInputOTPSlotCaret', 'BCInputOTPSeparator',
     ],
     'BCSelect': ['BCSelectItem'],
+    'BCPhoneField': ['BCPhoneNumber'],
     'BCTagGroup': ['BCTagItem'],
     'BCSpeedDial': ['BCSpeedDialItem'],
     'BCToggleButtonGroup': ['BCToggleButtonOption'],

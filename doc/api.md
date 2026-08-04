@@ -17,7 +17,7 @@ source, so they track the code.
 - [Actions](#actions) — `BCButton`, `BCSocialAuthButton`, `BCBrandLogo`, `BCLinkButton`, `BCCloseButton`, `BCFab`, `BCSpeedDial`, `BCToggleButton`, `BCToggleButtonGroup`, `BCPressable`
 - [Containers](#containers) — `BCSurface`, `BCCard`, `BCListGroup`, `BCAccordion`, `BCFlipCard`, `BCScrollShadow`
 - [Data display](#data-display) — `BCText`, `BCAvatar`, `BCChip`, `BCRibbon`, `BCTagGroup`, `BCSeparator`, `BCSkeleton`, `BCSpinner`, `BCProgress`, `BCLoadingOverlay`, `BCRating`, `BCEmptyState`
-- [Forms](#forms) — `BCInput`, `BCTextField`, `BCTextArea`, `BCPasswordInput`, `BCSearchField`, `BCInputOTP`, `BCDateField`, `BCTimeField`, `BCDateTimePicker`, `BCDateTimeWheel`, `BCCalendar`, `BCTimeWheel`, `BCSelect`, `BCControlField`
+- [Forms](#forms) — `BCInput`, `BCTextField`, `BCTextArea`, `BCPasswordInput`, `BCSearchField`, `BCInputOTP`, `BCDateField`, `BCTimeField`, `BCDateTimePicker`, `BCDateTimeWheel`, `BCCalendar`, `BCTimeWheel`, `BCPhoneField`, `BCSelect`, `BCControlField`
 - [Selection](#selection) — `BCCheckbox`, `BCRadioGroup`, `BCSwitch`, `BCSlider`, `BCRangeSlider`
 - [Overlays](#overlays) — `BCDialog`, `BCPopover`, `BCMenu`, `BCToast`
 
@@ -1630,6 +1630,7 @@ Single-line text input primitive.
 | `textCapitalization` | `TextCapitalization` | `TextCapitalization.none` |  |
 | `autocorrect` | `bool` | `true` |  |
 | `enableSuggestions` | `bool` | `true` |  |
+| `autofillHints` | `Iterable<String>?` | — | What the OS should offer to fill in — `AutofillHints.email`, `AutofillHints.telephoneNumberNational`, and so on. Without it the keychain and iOS's one-tap SMS code are unavailable. |
 | `prefix` | `Widget?` | — |  |
 | `suffix` | `Widget?` | — |  |
 
@@ -2057,9 +2058,103 @@ The hour / minute (and AM/PM) wheels behind `BCTimeField`. Usable on its own.
 | `minuteStep` | `int` | `1` | Minute increment shown on the wheel (e.g. 5 → 00, 05, 10 …). |
 | `onChanged` | `ValueChanged<TimeOfDay>` | required | Fires as each wheel settles. |
 
+### BCPhoneField
+
+International phone input: a tappable flag and dial code in the field's prefix opening a searchable country list, and a number that groups itself as you type. Leave `initialCountry` null and it opens on the device's own region, the way a web form reads `navigator.language`. Validation is libPhoneNumber's, not a regex — it knows each country's real lengths and prefixes, so `+1 555 000 0000` comes back invalid. Nothing is blocked while you type; `onChanged` reports a `BCPhoneNumber` with `isValid` on every keystroke and the message waits for blur. The trunk prefix is dropped as you type, because it is not part of an international number.
+
+```dart
+// No initialCountry: opens on the device's own region,
+// falling back to fallbackCountry when it reports none.
+BCPhoneField(
+  label: 'Mobile',
+  fallbackCountry: IsoCode.BD,
+  onChanged: (value) => setState(() => _phone = value),
+);
+
+BCPhoneField(
+  label: 'Mobile',
+  isRequired: true,
+  initialCountry: IsoCode.BD,
+  // The two or three countries your users actually live in, pinned on top.
+  preferredCountries: const [IsoCode.BD, IsoCode.GB, IsoCode.US],
+  onChanged: (value) => setState(() => _phone = value),
+  onValidityChanged: (valid) => setState(() => _canSubmit = valid),
+);
+
+// _phone.e164        -> '+8801712345678', what you send to a server
+// _phone.national    -> '1712-345678', what the field shows
+// _phone.isoCode     -> IsoCode.BD, whatever the picker says
+// _phone.isValid     -> checked against libPhoneNumber's metadata
+
+// Restrict the list, and let the caller name the countries.
+BCPhoneField(
+  countries: const [IsoCode.BD, IsoCode.IN, IsoCode.PK],
+  formatCountryName: (isoCode, name) => isoCode == IsoCode.US ? 'USA' : name,
+);
+```
+
+| Prop | Type | Default | Notes |
+|---|---|---|---|
+| `initialValue` | `BCPhoneNumber?` | — | Seeds the field. Its `BCPhoneNumber.isoCode` wins over `initialCountry`.  Read the value back through `onChanged` — like every other text input in the library this field is uncontrolled, because rebuilding it with re-grouped text would move the caret out from under the user. |
+| `onChanged` | `ValueChanged<BCPhoneNumber>?` | — | Fires on every keystroke and on every country change, with validity already computed. |
+| `onValidityChanged` | `ValueChanged<bool>?` | — | Fires only when validity flips, so a submit button can be driven straight from it without mirroring state. |
+| `onSubmitted` | `ValueChanged<BCPhoneNumber>?` | — | The keyboard's action key. |
+| `initialCountry` | `IsoCode?` | — | Country the field opens on. Ignored when `initialValue` is set.  Null — the default — reads the device's region, so a phone set to Bangladesh opens on Bangladesh. Resolved once when the field is created; changing the device region later does not move a field already on screen. |
+| `fallbackCountry` | `IsoCode` | `IsoCode.US` | Used when `initialCountry` is null and the device reports no region the parser recognises — a bare `en` locale, or a UN M.49 region like `es_419`. |
+| `onCountryChanged` | `ValueChanged<IsoCode>?` | — | Fires when a country is picked, and when pasting an international number changes it. |
+| `countries` | `List<IsoCode>?` | — | Restricts and orders the picker. Null — or an empty list — offers every country `phone_numbers_parser` knows, sorted by name. |
+| `preferredCountries` | `List<IsoCode>` | `const <IsoCode>[]` | Pinned above the rest, in the order given — the two or three countries your users actually live in. |
+| `countryPresentation` | `BCSelectPresentation` | `BCSelectPresentation.bottomSheet` | How the country list opens. The sheet is the default: it has room for 245 rows and it lifts the search field clear of the keyboard. |
+| `countryListLabel` | `String` | `'Select a country'` | Title above the country list, and the sheet's header. |
+| `countrySearchPlaceholder` | `String` | `'Search'` |  |
+| `formatCountryName` | `String Function(IsoCode isoCode, String defaultName)?` | — | Renames countries — your own localisation, or 'United States' shortened to 'USA'. Defaults are the English ISO 3166-1 short forms. |
+| `label` | `String?` | — | Rendered above the field. |
+| `description` | `String?` | — | Muted helper text under the field. Replaced by the error when there is one. |
+| `errorText` | `String?` | — | Your error — from a server, say. Always beats the field's own `invalidNumberText`, and forces the invalid styling on its own. |
+| `invalidNumberText` | `String?` | `'Enter a valid phone number'` | Shown under the field when a non-empty number fails validation and focus leaves. Set it to null to keep the field silent and report validity only through `onChanged`. |
+| `placeholder` | `String?` | — | Defaults to an example number for the selected country, so the shape expected is visible before anything is typed. |
+| `isRequired` | `bool` | `false` |  |
+| `isInvalid` | `bool` | `false` | Forces the invalid ring without a message, the way every other bc_ui field takes it. |
+| `isDisabled` | `bool` | `false` |  |
+| `variant` | `BCInputVariant` | `BCInputVariant.primary` |  |
+| `controller` | `TextEditingController?` | — | Holds the *formatted national part* — `(201) 555-0123`, never the dial code. Create and dispose it yourself; the field only reads and rewrites it. Use `onChanged` for the number you send to a server. |
+| `focusNode` | `FocusNode?` | — | Focus for the number, not for the country button. Blur on this node is what surfaces the validation message. |
+| `textInputAction` | `TextInputAction?` | — |  |
+| `autofocus` | `bool` | `false` |  |
+
+- `static IsoCode? deviceCountry()` — The device's configured region — `en_GB` gives `IsoCode.GB`, and null when no preferred locale carries one the parser knows. What `initialCountry` uses when you leave it null. This is the phone's configured region, not where it physically is.
+- `static String flagEmoji(IsoCode isoCode)` — The flag as a regional-indicator emoji pair — `IsoCode.BD` becomes 🇧🇩.
+
+**`BCSelectPresentation`** — `popover`, `bottomSheet`, `wheel`
+
+**`BCInputVariant`** — `primary`, `secondary`
+
+<details><summary><code>BCPhoneNumber</code></summary>
+
+A phone number as a country plus a national significant number.  The `nsn` is always in its international form: digits only, no trunk prefix (a UK number is `7400123456`, not `07400123456`) and no dial code.
+
+| Prop | Type | Default | Notes |
+|---|---|---|---|
+| `isoCode` | `IsoCode` | required | The country this number belongs to.  Authoritative, and deliberately so: `+1` covers 25 countries and no parser can tell a US number from a Canadian one. Whatever the picker says wins. |
+| `nsn` | `String` | required | National significant number — digits only. |
+
+- `const BCPhoneNumber({required IsoCode isoCode, required String nsn})` — The `nsn` is the national significant number in international form — digits only, no trunk prefix, no dial code.
+- `factory BCPhoneNumber.parse(String text, {IsoCode? country})` — Reads a number in any shape and never throws; an unreadable string comes back as the digits it could salvage under `country` (or `IsoCode.US`).
+- `IsoCode isoCode` — The country. Authoritative — `+1` covers 25 countries, so the picker decides, not the parser.
+- `String nsn` — National significant number, digits only.
+- `String dialCode` — Without the plus — `880`.
+- `String e164` — `+8801712345678`. Empty while `nsn` is.
+- `String national` — Grouped the way the country writes it — `(201) 555-0123`.
+- `String international` — `+880 1712-345678`.
+- `bool isEmpty` — Whether `nsn` is empty.
+- `bool isValid` — Length *and* pattern, against libPhoneNumber's metadata.
+- `BCPhoneNumber copyWith({IsoCode? isoCode, String? nsn})` — A copy with either half replaced.
+
+</details>
+
 ### BCSelect
 
-Dropdown select with three presentations — an anchored popover, a bottom sheet, or a spinning wheel — plus search and pagination hooks for lists too long to scroll. `isSearchable` filters locally; `onSearch` hands the lookup to you (debounced and awaited, so it can hit the network); `onLoadMore` fires as the list nears its end. Rows take `leading`/`trailing` slots, a per-item `onTap` and `isDisabled`, or hand the whole row to `itemBuilder`.
+Dropdown select with three presentations — an anchored popover, a bottom sheet, or a spinning wheel — plus search and pagination hooks for lists too long to scroll. `isSearchable` filters locally; `onSearch` hands the lookup to you (debounced and awaited, so it can hit the network); `onLoadMore` fires as the list nears its end. Rows take `leading`/`trailing` slots, a per-item `onTap` and `isDisabled`, or hand the whole row to `itemBuilder`. `triggerBuilder` replaces the trigger itself — pair it with `matchTriggerWidth: false` when the replacement is narrower than its list.
 
 ```dart
 // The default: an anchored list under the trigger.
@@ -2145,11 +2240,16 @@ BCSelect<int>(
 | `isLoadingMore` | `bool` | `false` | Shows a spinner below the last option while a page is in flight. |
 | `emptyPlaceholder` | `Widget?` | — | Shown when the list has nothing in it. Defaults to 'No results'. |
 | `itemBuilder` | `Widget Function( BuildContext context, BCSelectItem<T> item, bool isSelected, )?` | — | Replaces the row layout wholesale — price columns, two-line meta, whatever the screen needs. Press feedback, the tap and the disabled state still come from the list, and `isSelected` is handed to you so the selection can be shown however you like.  Ignored by `BCSelectPresentation.wheel`, which spins labels. |
+| `triggerBuilder` | `Widget Function( BuildContext context, BCSelectItem<T>? selected, bool isOpen, )?` | — | Replaces the trigger wholesale — a flag and a dial code inside a phone field, an avatar beside a name, a bare icon. The press feedback, the tap, the disabled dimming and the popover anchoring still come from the Select; `selected` is null until something is picked, and `isOpen` is handed to you so a chevron can rotate with the list.  A trigger narrower than its list wants `matchTriggerWidth` turned off. |
+| `matchTriggerWidth` | `bool` | `true` | Sizes the popover list to the trigger. Turn it off when `triggerBuilder` makes the trigger narrower than its list — an 80px flag button would otherwise open an 80px-wide list with an unusable search field.  Popover only; the sheet presentations are routes and ignore it. |
+| `triggerFeedback` | `BCPressFeedback` | `BCPressFeedback.scale` | Press feedback on the trigger. The scale is width-compensated, so a small `triggerBuilder` trigger pops harder than the default one — `BCPressFeedback.highlight` or `BCPressFeedback.none` suits an inline control better. |
 | `maxListHeight` | `double?` | — | Cap on the popover list's height. Defaults to 280. |
 
 **`BCOverlayPlacement`** — `bottom`, `top`, `auto`
 
 **`BCSelectPresentation`** — `popover`, `bottomSheet`, `wheel`
+
+**`BCPressFeedback`** — `scaleHighlight`, `scaleRipple`, `scale`, `highlight`, `material`, `none`
 
 <details><summary><code>BCSelectItem</code></summary>
 

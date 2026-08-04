@@ -38,6 +38,7 @@ class BCInput extends StatefulWidget {
     this.textCapitalization = TextCapitalization.none,
     this.autocorrect = true,
     this.enableSuggestions = true,
+    this.autofillHints,
     this.prefix,
     this.suffix,
   });
@@ -71,6 +72,12 @@ class BCInput extends StatefulWidget {
   final TextCapitalization textCapitalization;
   final bool autocorrect;
   final bool enableSuggestions;
+
+  /// What the OS should offer to fill in — [AutofillHints.email],
+  /// [AutofillHints.telephoneNumberNational], and so on. Without it the
+  /// keychain and iOS's one-tap SMS code are unavailable.
+  final Iterable<String>? autofillHints;
+
   final Widget? prefix;
   final Widget? suffix;
 
@@ -141,6 +148,7 @@ class _BCInputState extends State<BCInput> {
       keyboardType: widget.keyboardType,
       textInputAction: widget.textInputAction,
       inputFormatters: widget.inputFormatters,
+      autofillHints: widget.autofillHints,
       onChanged: widget.onChanged,
       onSubmitted: widget.onSubmitted,
       onTap: widget.onTap,

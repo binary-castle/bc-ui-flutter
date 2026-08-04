@@ -22,6 +22,7 @@ import 'package:example/showcase/screens/link_button_showcase_screen.dart';
 import 'package:example/showcase/screens/list_group_showcase_screen.dart';
 import 'package:example/showcase/screens/menu_showcase_screen.dart';
 import 'package:example/showcase/screens/navigation_showcase_screen.dart';
+import 'package:example/showcase/screens/phone_field_showcase_screen.dart';
 import 'package:example/showcase/screens/popover_showcase_screen.dart';
 import 'package:example/showcase/screens/progress_showcase_screen.dart';
 import 'package:example/showcase/screens/radio_group_showcase_screen.dart';
@@ -90,6 +91,7 @@ final List<ComponentEntry> componentRegistry = [
     'NavRail & NavDrawer',
     (_) => const NavigationShowcaseScreen(),
   ),
+  ComponentEntry('PhoneField', (_) => const PhoneFieldShowcaseScreen()),
   ComponentEntry('Popover', (_) => const PopoverShowcaseScreen()),
   ComponentEntry('Progress & Loading', (_) => const ProgressShowcaseScreen()),
   ComponentEntry('RadioGroup', (_) => const RadioGroupShowcaseScreen()),
