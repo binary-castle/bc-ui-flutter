@@ -1596,13 +1596,19 @@ def build_catalog_block():
 
 
 def splice_catalog(path):
-    """Rewrite the generated region of SKILL.md in place."""
+    """Rewrite the generated parts of SKILL.md in place."""
     text = open(path).read()
     if CATALOG_BEGIN not in text or CATALOG_END not in text:
         sys.exit(f'{path}: missing {CATALOG_BEGIN} / {CATALOG_END} markers')
     head = text.split(CATALOG_BEGIN)[0]
     tail = text.split(CATALOG_END, 1)[1]
-    return head + build_catalog_block() + tail
+    out = head + build_catalog_block() + tail
+    # The prose count sits outside the markers and had drifted four past the
+    # real number, so it is rewritten from the catalog too. --check catches it
+    # the next time a component lands.
+    count = sum(len(names) for _, names in CATALOG)
+    return re.sub(r'(~?)\d+ components',
+                  lambda m: f'{m.group(1)}{count} components', out)
 
 
 def targets():

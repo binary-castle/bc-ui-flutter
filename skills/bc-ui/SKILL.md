@@ -15,7 +15,7 @@ description: >-
 
 # bc_ui
 
-A Flutter design system: ~63 components on a Material 3 base, every colour,
+A Flutter design system: ~61 components on a Material 3 base, every colour,
 radius and duration coming from one token set. This skill routes you to exact,
 generated signatures — it does not restate them, because guessing a prop name
 is the failure mode it exists to prevent.
@@ -55,7 +55,7 @@ hand. Details in `references/setup.md`.
 
 ## 3. Conventions — these let you guess right
 
-The library is deliberately uniform, so a handful of rules cover 63 components:
+The library is deliberately uniform, so a handful of rules cover 61 components:
 
 - **`variant` picks the look, `size` picks the metrics.** Both are enums named
   after the component: `BCButtonVariant`, `BCButtonSize`, `BCChipColor`.
