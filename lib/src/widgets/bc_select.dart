@@ -103,6 +103,9 @@ class BCSelect<T> extends StatefulWidget {
     this.isLoadingMore = false,
     this.emptyPlaceholder,
     this.itemBuilder,
+    this.triggerBuilder,
+    this.matchTriggerWidth = true,
+    this.triggerFeedback = BCPressFeedback.scale,
     this.maxListHeight,
   });
 
@@ -155,6 +158,32 @@ class BCSelect<T> extends StatefulWidget {
     BCSelectItem<T> item,
     bool isSelected,
   )? itemBuilder;
+
+  /// Replaces the trigger wholesale — a flag and a dial code inside a phone
+  /// field, an avatar beside a name, a bare icon. The press feedback, the tap,
+  /// the disabled dimming and the popover anchoring still come from the
+  /// Select; `selected` is null until something is picked, and `isOpen` is
+  /// handed to you so a chevron can rotate with the list.
+  ///
+  /// A trigger narrower than its list wants [matchTriggerWidth] turned off.
+  final Widget Function(
+    BuildContext context,
+    BCSelectItem<T>? selected,
+    bool isOpen,
+  )? triggerBuilder;
+
+  /// Sizes the popover list to the trigger. Turn it off when [triggerBuilder]
+  /// makes the trigger narrower than its list — an 80px flag button would
+  /// otherwise open an 80px-wide list with an unusable search field.
+  ///
+  /// Popover only; the sheet presentations are routes and ignore it.
+  final bool matchTriggerWidth;
+
+  /// Press feedback on the trigger. The scale is width-compensated, so a small
+  /// [triggerBuilder] trigger pops harder than the default one —
+  /// [BCPressFeedback.highlight] or [BCPressFeedback.none] suits an inline
+  /// control better.
+  final BCPressFeedback triggerFeedback;
 
   /// Cap on the popover list's height. Defaults to 280.
   final double? maxListHeight;
@@ -240,48 +269,52 @@ class _BCSelectState<T> extends State<BCSelect<T>> {
   Widget build(BuildContext context) {
     final bc = context.bcTheme;
     final selected = _selected;
+    final buildTrigger = widget.triggerBuilder;
 
-    Widget trigger = Container(
-      clipBehavior: Clip.antiAlias,
-      decoration: ShapeDecoration(
-        color: bc.surface,
-        shape: BCShapes.continuous(BCRadius.xxl),
-        shadows: bc.surfaceShadow.shadows,
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        spacing: 12,
-        children: [
-          Expanded(
-            child: Text(
-              selected?.label ?? widget.placeholder,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: BCTypography.textBase.copyWith(
-                color: selected != null ? bc.foreground : bc.fieldPlaceholder,
-              ),
+    Widget trigger = buildTrigger != null
+        ? buildTrigger(context, selected, _isOpen)
+        : Container(
+            clipBehavior: Clip.antiAlias,
+            decoration: ShapeDecoration(
+              color: bc.surface,
+              shape: BCShapes.continuous(BCRadius.xxl),
+              shadows: bc.surfaceShadow.shadows,
             ),
-          ),
-          AnimatedRotation(
-            turns: _isOpen ? 0.5 : 0,
-            duration: const Duration(milliseconds: 200),
-            curve: Curves.easeOut,
-            child: Icon(
-              Icons.keyboard_arrow_down,
-              size: 20,
-              color: bc.muted,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              spacing: 12,
+              children: [
+                Expanded(
+                  child: Text(
+                    selected?.label ?? widget.placeholder,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: BCTypography.textBase.copyWith(
+                      color:
+                          selected != null ? bc.foreground : bc.fieldPlaceholder,
+                    ),
+                  ),
+                ),
+                AnimatedRotation(
+                  turns: _isOpen ? 0.5 : 0,
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.easeOut,
+                  child: Icon(
+                    Icons.keyboard_arrow_down,
+                    size: 20,
+                    color: bc.muted,
+                  ),
+                ),
+              ],
             ),
-          ),
-        ],
-      ),
-    );
+          );
 
     if (widget.isDisabled) {
       trigger = Opacity(opacity: bc.opacityDisabled, child: trigger);
     }
 
     final pressable = BCPressable(
-      feedback: BCPressFeedback.scale,
+      feedback: widget.triggerFeedback,
       enabled: !widget.isDisabled,
       onPressed: widget.isDisabled ? null : _open,
       child: trigger,
@@ -293,7 +326,7 @@ class _BCSelectState<T> extends State<BCSelect<T>> {
     return BCAnchoredOverlay(
       controller: _controller,
       placement: widget.placement,
-      matchAnchorWidth: true,
+      matchAnchorWidth: widget.matchTriggerWidth,
       onOpenChange: (open) => setState(() => _isOpen = open),
       overlayBuilder: (overlayContext) => Container(
         clipBehavior: Clip.antiAlias,

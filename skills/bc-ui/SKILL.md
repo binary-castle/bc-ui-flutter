@@ -15,7 +15,7 @@ description: >-
 
 # bc_ui
 
-A Flutter design system: ~63 components on a Material 3 base, every colour,
+A Flutter design system: ~61 components on a Material 3 base, every colour,
 radius and duration coming from one token set. This skill routes you to exact,
 generated signatures — it does not restate them, because guessing a prop name
 is the failure mode it exists to prevent.
@@ -55,7 +55,7 @@ hand. Details in `references/setup.md`.
 
 ## 3. Conventions — these let you guess right
 
-The library is deliberately uniform, so a handful of rules cover 63 components:
+The library is deliberately uniform, so a handful of rules cover 61 components:
 
 - **`variant` picks the look, `size` picks the metrics.** Both are enums named
   after the component: `BCButtonVariant`, `BCButtonSize`, `BCChipColor`.
@@ -84,7 +84,7 @@ from memory, and if a component isn't listed here it isn't part of bc_ui.
 
 <!-- BEGIN GENERATED: catalog -->
 
-Generated from bc_ui 0.3.0.
+Generated from bc_ui 0.4.0.
 
 | Read this file | For these components |
 |---|---|
@@ -94,7 +94,7 @@ Generated from bc_ui 0.3.0.
 | `references/actions.md` | `BCButton`, `BCSocialAuthButton`, `BCBrandLogo`, `BCLinkButton`, `BCCloseButton`, `BCFab`, `BCSpeedDial`, `BCToggleButton`, `BCToggleButtonGroup`, `BCPressable` |
 | `references/containers.md` | `BCSurface`, `BCCard`, `BCListGroup`, `BCAccordion`, `BCFlipCard`, `BCScrollShadow` |
 | `references/data-display.md` | `BCText`, `BCAvatar`, `BCChip`, `BCRibbon`, `BCTagGroup`, `BCSeparator`, `BCSkeleton`, `BCSpinner`, `BCProgress`, `BCLoadingOverlay`, `BCRating`, `BCEmptyState` |
-| `references/forms.md` | `BCInput`, `BCTextField`, `BCTextArea`, `BCPasswordInput`, `BCSearchField`, `BCInputOTP`, `BCSelect`, `BCControlField` |
+| `references/forms.md` | `BCInput`, `BCTextField`, `BCTextArea`, `BCPasswordInput`, `BCSearchField`, `BCInputOTP`, `BCPhoneField`, `BCSelect`, `BCControlField` |
 | `references/pickers.md` | `BCDateField`, `BCTimeField`, `BCDateTimePicker`, `BCDateTimeWheel`, `BCCalendar`, `BCTimeWheel` |
 | `references/selection.md` | `BCCheckbox`, `BCRadioGroup`, `BCSwitch`, `BCSlider`, `BCRangeSlider` |
 | `references/overlays.md` | `BCDialog`, `BCPopover`, `BCMenu`, `BCToast` |
