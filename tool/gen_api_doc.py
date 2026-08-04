@@ -179,7 +179,8 @@ CATALOG = [
         'BCToggleButton', 'BCToggleButtonGroup', 'BCPressable',
     ]),
     ('Containers', [
-        'BCSurface', 'BCCard', 'BCListGroup', 'BCFlipCard', 'BCScrollShadow',
+        'BCSurface', 'BCCard', 'BCListGroup', 'BCAccordion', 'BCFlipCard',
+        'BCScrollShadow',
     ]),
     ('Data display', [
         'BCText', 'BCAvatar', 'BCChip', 'BCRibbon', 'BCTagGroup', 'BCSeparator',
@@ -225,6 +226,7 @@ SUMMARY = {
     'BCSurface': 'Base container: 16px padding, 24px continuous corners, surface shadow.',
     'BCCard': 'Surface with the compound header/body/footer/title/description parts.',
     'BCListGroup': 'Grouped rows inside one rounded surface, with hairline separators.',
+    'BCAccordion': 'Collapsible sections stacked in one column — one open at a time, or several with `selectionMode`. Plain by default; `surface` wraps the stack in a rounded surface. Each `BCAccordionItem` pairs a `BCAccordionTrigger` with a `BCAccordionContent` that springs open as it fades in, and a chevron that rotates with it. Drive it with `value` + `onValueChange`, or hand it a `BCAccordionController`.',
     'BCFlipCard': 'Two faces that flip on tap or programmatically.',
     'BCScrollShadow': 'Fades a gradient in at the edges of a scrollable while there is more to scroll.',
     'BCText': 'Typography primitive with the heroui type scale.',
@@ -537,6 +539,48 @@ const BCRibbon(label: Text('-30%'), form: BCRibbonForm.bookmark);''',
     BCListGroupItem(title: 'Notifications', content: BCSwitch(isSelected: on, onSelectedChange: (v) {})),
   ],
 );''',
+    'BCAccordion': r'''// You own the set of expanded values.
+BCAccordion(
+  value: expanded,
+  onValueChange: (value) => setState(() => expanded = value),
+  variant: BCAccordionVariant.surface,
+  children: const [
+    BCAccordionItem(
+      value: 'shipping',
+      children: [
+        BCAccordionTrigger(child: Text('How much does shipping cost?')),
+        BCAccordionContent(child: Text('Free over $50.')),
+      ],
+    ),
+    BCAccordionItem(
+      value: 'returns',
+      children: [
+        BCAccordionTrigger(child: Text('Can I return an item?')),
+        BCAccordionContent(child: Text('Within 30 days.')),
+      ],
+    ),
+  ],
+);
+
+// Or let a controller own it, with several sections open at once.
+final faq = BCAccordionController(initialValue: const {'shipping'});
+
+BCAccordion(
+  controller: faq,
+  selectionMode: BCAccordionSelectionMode.multiple,
+  children: [...],
+);
+
+// A custom indicator is not rotated for you — read the state yourself.
+BCAccordionTrigger(
+  child: const Text('Details'),
+  indicator: Builder(
+    builder: (context) => Icon(
+      BCAccordionItem.isExpandedOf(context) ? Icons.remove : Icons.add,
+      size: 16,
+    ),
+  ),
+);''',
     'BCText': """const BCText('Section title', type: BCTextType.h4);
 const BCText('Muted caption', type: BCTextType.bodyXs, color: BCTextColor.muted);""",
     'BCAvatar': '''BCAvatar(
@@ -799,6 +843,14 @@ MEMBERS = {
         ('void jumpTo(T value)', 'Switch without animating.'),
         ('void dispose()', 'Disposes the page controller too.'),
     ],
+    'BCAccordionController': [
+        ('BCAccordionController({Set<String> initialValue = const {}})', "Create one per accordion and dispose it with your `State`. heroui's uncontrolled `defaultValue` is `initialValue` here."),
+        ('Set<String> value', 'The expanded item values. The getter is an unmodifiable view — assign a new set to change them.'),
+        ('bool isExpanded(String value)', 'Whether that item is open.'),
+        ('void expand(String value)', 'Opens one item, leaving the others alone. Does not apply `selectionMode`.'),
+        ('void collapse(String value)', 'Closes one item.'),
+        ('void collapseAll()', 'Closes everything.'),
+    ],
     'BCAnchoredOverlayController': [
         ('BCAnchoredOverlayController()', 'Create one per anchored overlay in a `State` and dispose it there. Drives `BCPopover`, `BCMenu` and `BCSelect`.'),
         ('bool isOpen', 'Whether the overlay is showing.'),
@@ -823,6 +875,10 @@ MEMBERS = {
 SUBPARTS = {
     'BCCard': ['BCCardHeader', 'BCCardBody', 'BCCardFooter', 'BCCardTitle', 'BCCardDescription'],
     'BCListGroup': ['BCListGroupItem'],
+    'BCAccordion': [
+        'BCAccordionItem', 'BCAccordionTrigger', 'BCAccordionIndicator',
+        'BCAccordionContent', 'BCAccordionController',
+    ],
     'BCTabs': ['BCTabItem', 'BCTabsController'],
     'BCNavRail': ['BCNavRailDestination'],
     'BCNavDrawer': [
@@ -1399,6 +1455,14 @@ GOTCHAS = [
      'scope from their parent. Used standalone they do not throw — they fall '
      'back to neutral defaults or render nothing, and a `BCRadio` outside a '
      '`BCRadioGroup` simply ignores taps. Always compose them under their parent.'),
+    ('BCAccordion', '`BCAccordionContent` is unmounted while its item is '
+     'collapsed — heroui does the same — so anything stateful inside it (a '
+     'text field\'s contents, a scroll offset, a playing video) is rebuilt '
+     'from scratch on every expand. Lift that state above the accordion. The '
+     'content is laid out at its natural height, so an unbounded-height child '
+     'such as a bare `ListView` throws: give it `shrinkWrap: true` or a fixed '
+     'height. And the accordion stretches its children to its own width, so '
+     'inside a `Row` it needs an `Expanded`.'),
     ('BCAppHeader', 'The frosted variants need something to blur: pair with '
      '`Scaffold(extendBodyBehindAppBar: true)`. The body then sits behind the '
      'header, so pad it yourself by '

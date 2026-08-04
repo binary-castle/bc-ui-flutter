@@ -1,0 +1,71 @@
+# Taskboard
+
+Tracks in-flight work on this package. One board per branch's worth of work;
+finished sections stay for the record until the branch merges.
+
+## Feat: BCAccordion (`feat/accordion`)
+
+Port of heroui-native's Accordion
+(<https://heroui.com/en/docs/native/components/accordion>), from
+`heroui-native/src/components/accordion/` + `src/primitives/accordion/`.
+
+### In progress
+
+_nothing_
+
+### Todo
+
+_nothing_
+
+### Done
+
+- [x] **Component** — `lib/src/widgets/bc_accordion.dart`
+      `BCAccordionSelectionMode` / `BCAccordionVariant`,
+      `BCAccordionController`, `BCAccordion`, `BCAccordionItem`,
+      `BCAccordionTrigger`, `BCAccordionIndicator`, `BCAccordionContent`,
+      and two private scopes.
+- [x] **Barrel** — `export 'bc_accordion.dart';` in
+      `lib/src/widgets/widgets.dart`.
+- [x] **Showcase** — `example/lib/showcase/screens/accordion_showcase_screen.dart`
+      with 7 variants (default, surface, multiple, no separators, custom
+      indicator, disabled/pinned, controlled), registered in
+      `showcase_home_screen.dart`.
+- [x] **Tests** — `test/bc_accordion_test.dart`, 24 cases, all passing.
+- [x] **Docs** — `tool/gen_api_doc.py` (`CATALOG`, `SUMMARY`, `EXAMPLES`,
+      `MEMBERS`, `SUBPARTS`, `GOTCHAS`) + regenerated `doc/api.md` and
+      `skills/bc-ui/**`; `README.md` Containers row; `CHANGELOG.md` 0.3.0.
+- [x] **Verify** — `flutter analyze` clean, 159/159 tests, `gen_api_doc.py
+      --check --check-coverage` clean, and all seven variants driven in the
+      iOS simulator in light and dark.
+- [x] **Ship** — committed and pushed as `feat/accordion`, PR opened.
+
+### Notes
+
+- `BCMotion` already carried `accordionSpring` (m4/k1600/d140),
+  `accordionIndicatorSpring` (m4/k1000/d140) and
+  `accordionContentFadeDuration` (200ms) before this work started.
+- The chevron rotates **-180°** (`-0.5` turns). `INDICATOR_ROTATION` in
+  upstream's `accordion.constants.ts` says `+180deg` but is dead code —
+  the live value is `[0, -180]` in `accordion.animation.ts`.
+- Collapsing uses `animateBackWith`, not `animateWith`: the latter forces
+  `_direction = forward`, so `isDismissed` never becomes true and the
+  content would never unmount.
+- The expanded flag reaches the indicator and content through an
+  `InheritedWidget`, so the springs are kicked from `didChangeDependencies`,
+  not the house `didUpdateWidget` idiom.
+- Known showcase-harness quirk, not a component bug: `UsageVariantPageView`
+  reserves 96px at the bottom while a 7-entry pagination rail is ~400px tall,
+  so tall variant content paints under the rail labels. Every screen with
+  many variants behaves this way.
+
+## Parked
+
+- `feat/phone-field` — `git stash` holds
+  `wip: phone_numbers_parser dep for feat/phone-field`, taken before this
+  branch was cut. It is probably now redundant: an equivalent (and larger)
+  set of phone-field changes has since appeared directly in the
+  `feat/accordion` working tree — `lib/src/widgets/bc_phone_field.dart`,
+  `lib/src/data/`, `tool/gen_country_data.py`, `test/bc_phone_field_test.dart`
+  and edits to `bc_input.dart` / `bc_select.dart` / `pubspec.yaml`. Check the
+  stash against the working tree before dropping it, and split the two
+  features apart before committing if they should land as separate PRs.
