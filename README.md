@@ -28,7 +28,7 @@
 - **Material stays available.** `BCTheme.light()` returns a `ThemeData`, so
   `Scaffold`, `Navigator`, `showDialog` and every Material widget still work.
 - **Inter is bundled.** No font setup, no missing-glyph surprises.
-- **50+ components**, all light/dark aware, all documented in the
+- **60+ components**, all light/dark aware, all documented in the
   [API reference](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md).
 
 | Light | Dark |
@@ -49,10 +49,13 @@ or add it by hand:
 
 ```yaml
 dependencies:
-  bc_ui: ^0.1.0
+  bc_ui: ^0.4.0
 ```
 
-Requires Dart SDK `^3.12.1`. No other runtime dependencies.
+Requires Dart SDK `^3.12.1`. The only runtime dependency is
+[`phone_numbers_parser`](https://pub.dev/packages/phone_numbers_parser), which
+`BCPhoneField` uses for parsing and validation — pure Dart, no platform
+channels.
 
 ## Setup
 
