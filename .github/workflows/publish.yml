@@ -1,0 +1,31 @@
+# Publishes bc_ui to pub.dev when a version tag is pushed.
+#
+# This is the other half of pub.dev's "Automated publishing" setting: that page
+# only *authorises* this repo, tag pattern and environment — nothing publishes
+# until this workflow runs and completes the OIDC token exchange.
+#
+# Flow (pub.dev triggers on a TAG, never on a branch merge):
+#   1. Land the release on main and set `version:` in pubspec.yaml + CHANGELOG.
+#   2. Tag that commit `vX.Y.Z` (must equal the pubspec version) and push it.
+#   3. This workflow runs, and pub.dev checks the tag matches `v{{version}}`.
+#
+# Docs: https://dart.dev/go/automated-publishing
+name: Publish to pub.dev
+
+on:
+  push:
+    tags:
+      # Matches v1.2.3 and pre-releases like v1.2.3-beta.1.
+      - 'v[0-9]+.[0-9]+.[0-9]+*'
+
+jobs:
+  publish:
+    permissions:
+      id-token: write # Required: mints the short-lived OIDC token pub.dev trusts.
+    # `environment` must match the name entered in pub.dev's "Environment" box
+    # (that field is currently blank — see the notes I left you). The reusable
+    # workflow applies it to the job so any required reviewers on the
+    # environment gate the publish.
+    uses: dart-lang/setup-dart/.github/workflows/publish.yml@v1
+    with:
+      environment: pub.dev
