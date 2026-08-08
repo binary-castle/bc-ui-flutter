@@ -36,9 +36,22 @@ class InputShowcaseScreen extends StatelessWidget {
         ),
         UsageVariant(
           title: 'Password',
-          builder: (context) => const BCPasswordInput(
-            placeholder: 'Enter password',
-          ),
+          builder: (context) {
+            final bc = context.bcTheme;
+            return Column(
+              spacing: 16,
+              children: [
+                const BCPasswordInput(placeholder: 'Enter password'),
+                BCPasswordInput(
+                  placeholder: 'Enter password',
+                  prefix: Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: Icon(Icons.lock_outline, size: 20, color: bc.muted),
+                  ),
+                ),
+              ],
+            );
+          },
         ),
       ],
     );

@@ -1,3 +1,12 @@
+## 0.4.1
+
+**Password field**
+
+* `BCPasswordInput` gains a `prefix`, the leading slot `BCInput` and
+  `BCTextFieldInput` already exposed. The visibility toggle keeps the trailing
+  slot, so a password field can now carry a leading icon (a lock, say) like
+  every other input.
+
 ## 0.4.0
 
 **Phone field**

@@ -8,6 +8,10 @@ import 'bc_pressable.dart';
 ///
 /// heroui-native has no dedicated PasswordInput — this mirrors its
 /// InputGroup-with-suffix pattern as a convenience widget.
+///
+/// The suffix is reserved for the visibility toggle; supply a [prefix] to
+/// add a leading widget (a lock icon, for example) the way [BCTextFieldInput]
+/// and [BCInput] do.
 class BCPasswordInput extends StatefulWidget {
   const BCPasswordInput({
     super.key,
@@ -15,6 +19,7 @@ class BCPasswordInput extends StatefulWidget {
     this.focusNode,
     this.variant = BCInputVariant.primary,
     this.placeholder,
+    this.prefix,
     this.isInvalid = false,
     this.isDisabled = false,
     this.onChanged,
@@ -26,6 +31,11 @@ class BCPasswordInput extends StatefulWidget {
   final FocusNode? focusNode;
   final BCInputVariant variant;
   final String? placeholder;
+
+  /// A leading widget shown before the text, mirroring [BCInput.prefix].
+  /// The trailing slot is taken by the visibility toggle.
+  final Widget? prefix;
+
   final bool isInvalid;
   final bool isDisabled;
   final ValueChanged<String>? onChanged;
@@ -57,6 +67,7 @@ class _BCPasswordInputState extends State<BCPasswordInput> {
       onSubmitted: widget.onSubmitted,
       autocorrect: false,
       enableSuggestions: false,
+      prefix: widget.prefix,
       suffix: BCPressable(
         feedback: BCPressFeedback.none,
         onPressed: () => setState(() => _obscured = !_obscured),
