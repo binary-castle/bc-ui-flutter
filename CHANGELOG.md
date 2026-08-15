@@ -1,3 +1,21 @@
+## 0.4.2
+
+**Dialog**
+
+* A modal with a form in it no longer disappears behind the on-screen
+  keyboard. The dialog is laid out in the band above the keyboard, and content
+  taller than that band scrolls — focusing a field brings it into view instead
+  of leaving the caret under the keys, so six fields in a modal stay reachable
+  from the first to the last.
+* `BCDialog.show` gains `isSwipeable` (on by default): a downward drag carries
+  the dialog with the finger the way a bottom sheet does, rubber-bands when
+  dragged the other way, and either springs back or keeps the momentum of the
+  throw — the drag physics `BCToast` already used, rather than a gesture that
+  merely triggers the close animation. While the content is tall enough to
+  scroll, the scroll takes the drag.
+* The Dialog showcase gains a *Form dialog* variant — six fields and a
+  password, the case both of the above are about.
+
 ## 0.4.1
 
 **Password field**

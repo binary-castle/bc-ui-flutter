@@ -258,7 +258,7 @@ SUMMARY = {
     'BCRadioGroup': 'Radio group; wraps `BCRadio` children and owns the selected value.',
     'BCSwitch': 'Switch with spring thumb motion and optional start/end content.',
     'BCSlider': 'Slider with optional label, output readout and stepping.',
-    'BCDialog': 'Modal dialog (static `show`, plus content/title/description parts).',
+    'BCDialog': 'Modal dialog (static `show`, plus content/title/description parts). Built for forms as much as for confirmations: it sits above the on-screen keyboard, scrolls whatever no longer fits in the band that is left — focusing a field brings it into view rather than leaving it under the keyboard — and follows a downward swipe the way a bottom sheet does.',
     'BCPopover': 'Anchored popover that flips and clamps to stay on screen.',
     'BCMenu': 'Anchored menu with items, labels, separators and a danger variant.',
     'BCToast': 'Transient message queue; `BCToastProvider` hosts it above the app. Toasts stack against the top or bottom edge (`placement`, per provider or per toast) and are swiped away toward that edge — the card tracks the finger, rubber-bands the other way, and keeps its momentum when it is thrown.',
@@ -905,7 +905,7 @@ MEMBERS = {
         ('void toggle()', 'The usual `onPressed` for a trigger.'),
     ],
     'BCDialog': [
-        ('static Future<R?> show<R>(BuildContext context, {required WidgetBuilder builder, bool barrierDismissible = true})', 'Presents `builder` over the themed backdrop with the scale + fade transition.'),
+        ('static Future<R?> show<R>(BuildContext context, {required WidgetBuilder builder, bool barrierDismissible = true, bool isSwipeable = true})', 'Presents `builder` over the themed backdrop with the scale + fade transition, above the keyboard and scrolling if it has to. `isSwipeable` gives it the drag-to-dismiss physics `BCToast` uses: the dialog tracks a downward drag 1:1, rubber-bands an upward one, and either springs back or keeps the momentum of the throw. While the content is tall enough to scroll, the scroll takes the drag.'),
     ],
     'BCToast': [
         ('static void show(BuildContext context, BCToastData data)', 'Queues a toast. Requires a `BCToastProvider` above `context`.'),

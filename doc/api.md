@@ -1749,6 +1749,7 @@ Input with a reveal toggle.
 | `focusNode` | `FocusNode?` | — |  |
 | `variant` | `BCInputVariant` | `BCInputVariant.primary` |  |
 | `placeholder` | `String?` | — |  |
+| `prefix` | `Widget?` | — | A leading widget shown before the text, mirroring `BCInput.prefix`. The trailing slot is taken by the visibility toggle. |
 | `isInvalid` | `bool` | `false` |  |
 | `isDisabled` | `bool` | `false` |  |
 | `onChanged` | `ValueChanged<String>?` | — |  |
@@ -2475,7 +2476,7 @@ A start/end pair for `BCRangeSlider`.
 
 ### BCDialog
 
-Modal dialog (static `show`, plus content/title/description parts).
+Modal dialog (static `show`, plus content/title/description parts). Built for forms as much as for confirmations: it sits above the on-screen keyboard, scrolls whatever no longer fits in the band that is left — focusing a field brings it into view rather than leaving it under the keyboard — and follows a downward swipe the way a bottom sheet does.
 
 ```dart
 BCDialog.show<void>(
@@ -2501,7 +2502,7 @@ BCDialog.show<void>(
 );
 ```
 
-- `static Future<R?> show<R>(BuildContext context, {required WidgetBuilder builder, bool barrierDismissible = true})` — Presents `builder` over the themed backdrop with the scale + fade transition.
+- `static Future<R?> show<R>(BuildContext context, {required WidgetBuilder builder, bool barrierDismissible = true, bool isSwipeable = true})` — Presents `builder` over the themed backdrop with the scale + fade transition, above the keyboard and scrolling if it has to. `isSwipeable` gives it the drag-to-dismiss physics `BCToast` uses: the dialog tracks a downward drag 1:1, rubber-bands an upward one, and either springs back or keeps the momentum of the throw. While the content is tall enough to scroll, the scroll takes the drag.
 
 <details><summary><code>BCDialogContent</code></summary>
 

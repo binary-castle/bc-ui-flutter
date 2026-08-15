@@ -67,6 +67,13 @@ class DialogShowcaseScreen extends StatelessWidget {
     );
   }
 
+  void _showForm(BuildContext context) {
+    BCDialog.show<void>(
+      context,
+      builder: (dialogContext) => const _ProfileFormDialog(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return ComponentShowcaseScaffold(
@@ -87,7 +94,89 @@ class DialogShowcaseScreen extends StatelessWidget {
             child: const Text('Open dialog'),
           ),
         ),
+        UsageVariant(
+          title: 'Form dialog',
+          builder: (context) => BCButton(
+            variant: BCButtonVariant.secondary,
+            onPressed: () => _showForm(context),
+            child: const Text('Edit profile'),
+          ),
+        ),
       ],
+    );
+  }
+}
+
+/// Six fields in a modal — enough that the keyboard would cover the lower
+/// half of them. Focusing one scrolls it into the band above the keyboard,
+/// and the whole dialog can be swiped down to dismiss once it fits again.
+class _ProfileFormDialog extends StatefulWidget {
+  const _ProfileFormDialog();
+
+  @override
+  State<_ProfileFormDialog> createState() => _ProfileFormDialogState();
+}
+
+class _ProfileFormDialogState extends State<_ProfileFormDialog> {
+  final _controllers = List.generate(5, (_) => TextEditingController());
+
+  @override
+  void dispose() {
+    for (final controller in _controllers) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
+  Widget _field(String label, String hint, TextEditingController c) {
+    return BCTextField(
+      children: [
+        BCTextFieldLabel(label),
+        BCTextFieldInput(controller: c, hintText: hint),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BCDialogContent(
+      width: double.infinity,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        spacing: 16,
+        children: [
+          const BCDialogTitle('Edit profile'),
+          _field('Full name', 'Ada Lovelace', _controllers[0]),
+          _field('Email', 'ada@example.com', _controllers[1]),
+          _field('Company', 'Analytical Engines Ltd', _controllers[2]),
+          _field('Job title', 'Mathematician', _controllers[3]),
+          _field('Website', 'https://example.com', _controllers[4]),
+          const BCTextField(
+            children: [
+              BCTextFieldLabel('Password'),
+              BCPasswordInput(placeholder: 'Enter password'),
+            ],
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            spacing: 8,
+            children: [
+              BCButton(
+                variant: BCButtonVariant.ghost,
+                size: BCButtonSize.sm,
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Cancel'),
+              ),
+              BCButton(
+                size: BCButtonSize.sm,
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Save'),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
