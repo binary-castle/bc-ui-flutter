@@ -28,7 +28,7 @@
 - **Material stays available.** `BCTheme.light()` returns a `ThemeData`, so
   `Scaffold`, `Navigator`, `showDialog` and every Material widget still work.
 - **Inter is bundled.** No font setup, no missing-glyph surprises.
-- **60+ components**, all light/dark aware, all documented in the
+- **65+ components**, all light/dark aware, all documented in the
   [API reference](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md).
 
 | Light | Dark |
@@ -49,7 +49,7 @@ or add it by hand:
 
 ```yaml
 dependencies:
-  bc_ui: ^0.4.0
+  bc_ui: ^0.5.0
 ```
 
 Requires Dart SDK `^3.12.1`. The only runtime dependency is
@@ -146,6 +146,7 @@ Full props, defaults and enums for every entry: **[API reference](https://github
 | **Forms** | [`BCInput`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bcinput) · [`BCTextField`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bctextfield) · [`BCTextArea`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bctextarea) · [`BCPasswordInput`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bcpasswordinput) · [`BCSearchField`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bcsearchfield) · [`BCInputOTP`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bcinputotp) · [`BCDateField`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bcdatefield) · [`BCTimeField`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bctimefield) · [`BCDateTimePicker`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bcdatetimepicker) · [`BCPhoneField`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bcphonefield) · [`BCSelect`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bcselect) · [`BCControlField`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bccontrolfield) |
 | **Selection** | [`BCCheckbox`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bccheckbox) · [`BCRadioGroup`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bcradiogroup) · [`BCSwitch`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bcswitch) · [`BCSlider`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bcslider) · [`BCRangeSlider`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bcrangeslider) |
 | **Overlays** | [`BCDialog`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bcdialog) · [`BCPopover`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bcpopover) · [`BCMenu`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bcmenu) · [`BCToast`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bctoast) |
+| **AI chat** | [`BCAIChat`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bcaichat) · [`BCChatThread`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bcchatthread) · [`BCChatComposer`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bcchatcomposer) · [`BCChatMarkdown`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bcchatmarkdown) · [`BCAgentStepList`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bcagentsteplist) · [`BCVoiceOverlay`](https://github.com/binary-castle/bc-ui-flutter/blob/main/doc/api.md#bcvoiceoverlay) |
 
 The three pickers — `BCDateField`, `BCTimeField`, `BCDateTimePicker` — share a
 `presentation` prop (`dialog`, `popover`, `bottomSheet`), so swapping one for

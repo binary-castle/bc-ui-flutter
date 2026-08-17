@@ -197,6 +197,10 @@ CATALOG = [
         'BCCheckbox', 'BCRadioGroup', 'BCSwitch', 'BCSlider', 'BCRangeSlider',
     ]),
     ('Overlays', ['BCDialog', 'BCPopover', 'BCMenu', 'BCToast']),
+    ('AI chat', [
+        'BCAIChat', 'BCChatThread', 'BCChatComposer', 'BCChatMarkdown',
+        'BCAgentStepList', 'BCVoiceOverlay',
+    ]),
 ]
 
 # One-liners that override / sharpen the source dartdoc for the doc index.
@@ -262,6 +266,12 @@ SUMMARY = {
     'BCPopover': 'Anchored popover that flips and clamps to stay on screen.',
     'BCMenu': 'Anchored menu with items, labels, separators and a danger variant.',
     'BCToast': 'Transient message queue; `BCToastProvider` hosts it above the app. Toasts stack against the top or bottom edge (`placement`, per provider or per toast) and are swiped away toward that edge — the card tracks the finger, rubber-bands the other way, and keeps its momentum when it is thrown.',
+    'BCAIChat': 'A whole AI chat screen: transcript, composer and greeting, over a `BCChatController`. Every slot takes a builder that receives the widget it would otherwise have used, so you wrap rather than rewrite; drop to `BCChatThread` and `BCChatComposer` when even the layout needs to change. It talks to no model — `onSend` hands you the text and the attachments, and you stream the reply back through the controller.',
+    'BCChatThread': 'The scrolling transcript. It follows the bottom while you are reading the newest message and stops the moment you scroll up, so a streaming reply never yanks the view away; a pill takes you back. Renders bubbles, date separators, agent steps and attachments.',
+    'BCChatComposer': 'The input row: a draft that grows to `maxLines` and then scrolls, staged attachment chips, and a send button that becomes a stop button while the agent works. Enter sends on desktop and inserts a newline on phones, or set `submitBehavior` yourself. bc_ui does no file picking — wire `onAttachPressed` to your own.',
+    'BCChatMarkdown': 'The markdown an assistant actually emits — bold, italic, inline code, links, fenced code blocks, lists, quotes, rules and pipe tables — with no third-party dependency. Built for streaming: an unclosed fence renders what has arrived, and an unbalanced `**` stays literal instead of swallowing the rest of the message.',
+    'BCAgentStepList': "The agent's tool calls for one turn, shown above the reply. Collapsed it is a summary row — *Worked for 12s · 4 steps* — that expands into the list; it opens itself while anything is still running so the work is visible as it happens.",
+    'BCVoiceOverlay': 'Full-screen voice mode: a breathing orb that swells with the input level, the live transcript, and mute/keyboard/end controls. Purely visual — bc_ui opens no microphone, recognises no speech and requests no permission; you drive `BCVoiceController` from your own audio stack.',
 }
 
 EXAMPLES = {
@@ -858,6 +868,143 @@ BCToast.show(context, const BCToastData(
   showCloseButton: true,
   duration: Duration.zero,
 ));''',
+    'BCAIChat': '''// Two controllers: one owns the transcript, one owns the draft.
+final _chat = BCChatController();
+final _composer = BCChatComposerController();
+
+BCAIChat(
+  controller: _chat,
+  composerController: _composer,
+  greeting: 'What can I help with?',
+  suggestions: const [
+    BCChatSuggestion(label: 'Summarise my inbox'),
+    BCChatSuggestion(label: 'Plan the sprint'),
+  ],
+  onAttachPressed: _pickFiles,      // your picker, your upload
+  onVoicePressed: _startVoiceMode,
+  onStop: _cancelRequest,
+  onSend: (text, attachments) async {
+    _chat.add(BCChatMessage(
+      id: '${DateTime.now().microsecondsSinceEpoch}',
+      role: BCChatRole.user,
+      text: text,
+      attachments: attachments,
+    ));
+    _composer.reset();
+
+    // Open the reply, push chunks as they arrive, then close it.
+    const replyId = 'reply';
+    _chat.add(const BCChatMessage(
+      id: replyId,
+      role: BCChatRole.assistant,
+      status: BCChatMessageStatus.streaming,
+    ));
+    await for (final chunk in myModel.stream(text)) {
+      _chat.appendChunk(replyId, chunk);
+    }
+    _chat.finish(replyId);
+  },
+);
+
+// Swap in a different markdown renderer, keep everything else.
+BCAIChat(
+  controller: _chat,
+  onSend: _send,
+  contentBuilder: (context, message) => GptMarkdown(message.text),
+);''',
+    'BCChatThread': '''// The transcript on its own, with your own composer underneath.
+Column(
+  children: [
+    Expanded(
+      child: BCChatThread(
+        controller: _chat,
+        variant: BCChatBubbleVariant.surface,
+        avatarBuilder: (context, message) =>
+            message.role == BCChatRole.assistant
+                ? BCAvatar.withInitials('AI', size: BCAvatarSize.small)
+                : null,
+        actionsBuilder: (context, message) => [
+          BCChatMessageAction(
+            icon: Icons.copy_rounded,
+            label: 'Copy',
+            onPressed: () => Clipboard.setData(
+              ClipboardData(text: message.text),
+            ),
+          ),
+        ],
+      ),
+    ),
+    MyOwnComposer(),
+  ],
+);''',
+    'BCChatComposer': '''BCChatComposer(
+  controller: _composer,
+  isGenerating: _chat.isGenerating,
+  onSend: (text, attachments) => _send(text, attachments),
+  onStop: _cancelRequest,
+  onAttachPressed: () async {
+    final picked = await FilePicker.platform.pickFiles();
+    _composer.addAttachments([
+      for (final file in picked?.files ?? [])
+        BCChatAttachment(
+          id: file.path!,
+          name: file.name,
+          kind: BCChatAttachmentKind.document,
+          sizeBytes: file.size,
+          status: BCChatAttachmentStatus.uploading,
+          progress: 0,
+        ),
+    ]);
+    // Walk `progress` up as your upload reports in, then mark it ready —
+    // send stays disabled until it is.
+  },
+);
+
+// Desktop drag-and-drop: bring your own plugin, bc_ui draws the target.
+BCChatDropTarget(
+  isActive: _dragging,
+  child: BCChatComposer(controller: _composer, onSend: _send),
+);''',
+    'BCChatMarkdown': '''BCChatMarkdown(
+  data: message.text,
+  onLinkTap: (href) => launchUrlString(href),
+  onCodeCopied: () => BCToast.show(
+    context,
+    const BCToastData(title: 'Copied', variant: BCToastVariant.success),
+  ),
+);''',
+    'BCAgentStepList': '''// Steps live on the message, so they render above its reply.
+_chat.updateSteps(replyId, const [
+  BCAgentStep(
+    id: 's1',
+    label: 'Searched the web',
+    detail: 'flutter chat ui',
+    status: BCAgentStepStatus.success,
+    duration: Duration(milliseconds: 820),
+    output: 'pub.dev/packages/bc_ui',
+  ),
+  BCAgentStep(
+    id: 's2',
+    label: 'Reading results',
+    status: BCAgentStepStatus.running,
+  ),
+]);''',
+    'BCVoiceOverlay': '''final _voice = BCVoiceController();
+
+// bc_ui draws the session; the microphone is yours.
+await BCVoiceOverlay.show(
+  context,
+  controller: _voice,
+  title: 'Assistant',
+  onKeyboard: () {},        // back to typing
+  onEnd: _recorder.stop,
+);
+
+// Somewhere in your audio stack:
+_voice.state = BCVoiceState.listening;
+_levels = _recorder.onAmplitude.listen((a) {
+  _voice.amplitude = a.current;   // 0..1, clamped for you
+});''',
 }
 
 MEMBERS = {
@@ -960,6 +1107,23 @@ SUBPARTS = {
     'BCDateTimePicker': ['BCDateTimeWheel'],
     'BCTimeField': ['BCTimePickerDialog', 'BCTimeWheel'],
     'BCControlField': ['BCLabel', 'BCDescription', 'BCFieldError'],
+    'BCAIChat': [
+        'BCChatController', 'BCChatComposerController', 'BCChatMessage',
+        'BCChatAttachment', 'BCAgentStep',
+    ],
+    'BCChatThread': [
+        'BCChatMessageView', 'BCChatBubble', 'BCChatMessageActions',
+        'BCChatMessageAction', 'BCChatTypingIndicator',
+    ],
+    'BCChatComposer': [
+        'BCChatAttachmentStrip', 'BCChatAttachmentChip', 'BCChatDropTarget',
+        'BCChatSuggestions', 'BCChatSuggestion',
+    ],
+    'BCChatMarkdown': ['BCChatCodeBlock'],
+    'BCAgentStepList': ['BCAgentStepTile'],
+    'BCVoiceOverlay': [
+        'BCVoiceController', 'BCVoiceOrb', 'BCVoiceWaveform', 'BCMicButton',
+    ],
 }
 
 
@@ -1530,6 +1694,7 @@ INTERNAL = [
     'BCAnchoredOverlay', 'BCPickerPanel', 'BCPickerSheet', 'BCSvgPath',
     'BCColorSchemes', 'BCColorsLight', 'BCColorsDark', 'BCTextStyles',
     'BCAppBarTheme', 'BCAvatarTheme', 'BCSkeletonTheme', 'BCInputOTPTheme',
+    'BCAIChatTheme',
 ]
 
 

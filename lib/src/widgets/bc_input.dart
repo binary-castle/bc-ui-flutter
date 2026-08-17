@@ -39,6 +39,7 @@ class BCInput extends StatefulWidget {
     this.autocorrect = true,
     this.enableSuggestions = true,
     this.autofillHints,
+    this.contentInsertionConfiguration,
     this.prefix,
     this.suffix,
   });
@@ -77,6 +78,15 @@ class BCInput extends StatefulWidget {
   /// [AutofillHints.telephoneNumberNational], and so on. Without it the
   /// keychain and iOS's one-tap SMS code are unavailable.
   final Iterable<String>? autofillHints;
+
+  /// What to do when the keyboard or clipboard inserts rich content — a
+  /// pasted image, a GIF from the keyboard's picker. Null uses Flutter's
+  /// default, which is to refuse the insertion.
+  ///
+  /// Only Android delivers these today; on every other platform the callback
+  /// never fires, so a desktop app wanting paste-to-attach still has to read
+  /// the clipboard itself.
+  final ContentInsertionConfiguration? contentInsertionConfiguration;
 
   final Widget? prefix;
   final Widget? suffix;
@@ -149,6 +159,7 @@ class _BCInputState extends State<BCInput> {
       textInputAction: widget.textInputAction,
       inputFormatters: widget.inputFormatters,
       autofillHints: widget.autofillHints,
+      contentInsertionConfiguration: widget.contentInsertionConfiguration,
       onChanged: widget.onChanged,
       onSubmitted: widget.onSubmitted,
       onTap: widget.onTap,

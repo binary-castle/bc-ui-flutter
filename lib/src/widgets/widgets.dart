@@ -1,3 +1,15 @@
+export 'ai_chat/bc_agent_steps.dart';
+export 'ai_chat/bc_ai_chat.dart';
+export 'ai_chat/bc_chat_attachments.dart';
+export 'ai_chat/bc_chat_bubble.dart';
+export 'ai_chat/bc_chat_composer.dart';
+export 'ai_chat/bc_chat_controller.dart';
+export 'ai_chat/bc_chat_markdown.dart' show BCChatCodeBlock, BCChatMarkdown;
+export 'ai_chat/bc_chat_models.dart';
+export 'ai_chat/bc_chat_suggestions.dart';
+export 'ai_chat/bc_chat_thread.dart';
+export 'ai_chat/bc_voice_controller.dart';
+export 'ai_chat/bc_voice_session.dart';
 export 'bc_accordion.dart';
 export 'bc_app_header.dart';
 export 'bc_avatar.dart';

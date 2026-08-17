@@ -1,3 +1,62 @@
+## 0.5.0-beta.1
+
+A pre-release so the AI chat family can be used in a real app before 0.5.0
+goes out. The API is complete and the whole suite passes; what it has not had
+yet is a week of someone building against it. Treat the surface as settled but
+not frozen — if something wants renaming, this is the window for it.
+
+**AI chat**
+
+* A new family of components for an AI assistant screen, in the shape people
+  now expect one: a transcript the reply streams into, a composer that takes
+  text and files, a visible record of the tool calls the agent ran, and a
+  voice mode. `BCAIChat` assembles the lot; `BCChatThread`, `BCChatComposer`,
+  `BCChatBubble`, `BCAgentStepList` and `BCVoiceOverlay` are each usable on
+  their own if the assembled layout is not the one you want.
+* **None of it talks to a model.** There is no networking, no file picking, no
+  audio capture and no permission request anywhere in it — those are decisions
+  a design system has no business making. You drive `BCChatController` and
+  `BCChatComposerController` from whatever backend you already have, and the
+  widgets draw what you put in them. Streaming a reply is three calls: `add` a
+  message marked `streaming`, `appendChunk` as tokens arrive, `finish` at the
+  end.
+* The transcript follows the newest message only while you are already reading
+  it. Scroll up and it stops following, so a reply streaming in never yanks a
+  half-read paragraph off the screen; a pill appears to take you back down.
+* Assistant text renders through `BCChatMarkdown`, a small renderer written
+  for this package rather than a dependency — bold, italic, inline code,
+  links, fenced code blocks with a copy button, lists, quotes, rules and pipe
+  tables. It is built for the half-written state every streamed message passes
+  through: an unclosed fence renders what has arrived so far, and an
+  unbalanced `**` stays literal instead of emphasising the rest of the reply.
+  Swap it for `flutter_markdown` or anything else through `contentBuilder` if
+  you need full CommonMark.
+* `BCAgentStepList` shows what the agent did on the user's behalf — searches,
+  file edits, tool calls — collapsed into a *Worked for 12s · 4 steps* summary
+  that opens itself while anything is still running and folds away once the
+  turn is done. Steps nest one level and can carry their tool output.
+* Voice mode is `BCVoiceOverlay`: a painted orb that breathes at rest, swells
+  with the input level while listening and sweeps while thinking, over a live
+  transcript and mute/keyboard/end controls. Push `state`, `amplitude` and
+  `transcript` into `BCVoiceController` from your own audio stack.
+* Attachments are described, never handled. You pick the file and run the
+  upload; `BCChatAttachment` carries the name, size, thumbnail and progress,
+  and the composer refuses to send while an upload is still in flight.
+  `BCChatDropTarget` draws the drag affordance for whichever drag-and-drop
+  plugin you use.
+* Everything is overridable at three levels: colours come from the theme, each
+  visual constant has a nullable prop, and every slot has a builder that
+  receives the widget it would otherwise have used — so you wrap rather than
+  rewrite. All motion honours *Reduce Motion*.
+* **This adds no new runtime dependency.** `phone_numbers_parser` is still the
+  only one.
+
+**Input**
+
+* `BCInput` gains `contentInsertionConfiguration`, so a field can accept an
+  image pasted from the clipboard or inserted by the keyboard. Android is the
+  only platform that delivers these today. Existing callers are unaffected.
+
 ## 0.4.2
 
 **Dialog**

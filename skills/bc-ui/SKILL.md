@@ -15,7 +15,7 @@ description: >-
 
 # bc_ui
 
-A Flutter design system: ~61 components on a Material 3 base, every colour,
+A Flutter design system: ~67 components on a Material 3 base, every colour,
 radius and duration coming from one token set. This skill routes you to exact,
 generated signatures — it does not restate them, because guessing a prop name
 is the failure mode it exists to prevent.
@@ -55,7 +55,7 @@ hand. Details in `references/setup.md`.
 
 ## 3. Conventions — these let you guess right
 
-The library is deliberately uniform, so a handful of rules cover 61 components:
+The library is deliberately uniform, so a handful of rules cover 67 components:
 
 - **`variant` picks the look, `size` picks the metrics.** Both are enums named
   after the component: `BCButtonVariant`, `BCButtonSize`, `BCChipColor`.
@@ -84,7 +84,7 @@ from memory, and if a component isn't listed here it isn't part of bc_ui.
 
 <!-- BEGIN GENERATED: catalog -->
 
-Generated from bc_ui 0.4.2.
+Generated from bc_ui 0.5.0-beta.1.
 
 | Read this file | For these components |
 |---|---|
@@ -98,6 +98,7 @@ Generated from bc_ui 0.4.2.
 | `references/pickers.md` | `BCDateField`, `BCTimeField`, `BCDateTimePicker`, `BCDateTimeWheel`, `BCCalendar`, `BCTimeWheel` |
 | `references/selection.md` | `BCCheckbox`, `BCRadioGroup`, `BCSwitch`, `BCSlider`, `BCRangeSlider` |
 | `references/overlays.md` | `BCDialog`, `BCPopover`, `BCMenu`, `BCToast` |
+| `references/ai-chat.md` | `BCAIChat`, `BCChatThread`, `BCChatComposer`, `BCChatMarkdown`, `BCAgentStepList`, `BCVoiceOverlay` |
 | `references/gotchas.md` | Silent failures, asserts, internal-only names |
 
 <!-- END GENERATED -->
