@@ -1,3 +1,14 @@
+## 0.4.3
+
+**Toast**
+
+* A bottom toast no longer comes up behind the on-screen keyboard, where it
+  was all but invisible. While the keyboard is up, `bottomInset` is measured
+  from the top of the keys instead of the safe area, and the card rides the
+  keyboard down again when it closes. Top toasts are unaffected.
+* The Toast showcase gains a *With the keyboard up* variant — a focused field
+  and a toast fired behind it, the case the above is about.
+
 ## 0.4.2
 
 **Dialog**

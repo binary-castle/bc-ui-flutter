@@ -2737,7 +2737,7 @@ BCToast.show(context, const BCToastData(
 | `maxVisible` | `int` | `3` | Older toasts beyond this count are dismissed immediately. |
 | `placement` | `BCToastPlacement` | `BCToastPlacement.bottom` | Edge toasts stack against unless `BCToastData.placement` says otherwise.  Defaults to `BCToastPlacement.bottom`; heroui-native's own default is `top`, so pass `BCToastPlacement.top` to match it exactly. |
 | `topInset` | `double` | `16` | Distance from the top safe area to a `BCToastPlacement.top` toast. |
-| `bottomInset` | `double` | `16` | Distance from the bottom safe area to a `BCToastPlacement.bottom` toast. |
+| `bottomInset` | `double` | `16` | Distance from the bottom safe area — or from the keyboard, whenever it covers more — to a `BCToastPlacement.bottom` toast. |
 | `horizontalInset` | `double` | `16` | Distance from the left and right edges. |
 | `isSwipeable` | `bool` | `true` | Whether toasts can be swiped away, unless `BCToastData.isSwipeable` says otherwise. |
 

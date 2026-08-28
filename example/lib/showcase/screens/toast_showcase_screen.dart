@@ -186,6 +186,34 @@ class ToastShowcaseScreen extends StatelessWidget {
           ),
         ),
         UsageVariant(
+          title: 'With the keyboard up',
+          builder: (context) => Column(
+            spacing: 12,
+            children: [
+              const BCTextField(
+                children: [
+                  BCTextFieldLabel('Email'),
+                  BCTextFieldInput(hintText: 'ada@example.com'),
+                ],
+              ),
+              BCButton(
+                variant: BCButtonVariant.secondary,
+                fullWidth: true,
+                onPressed: () => BCToast.show(
+                  context,
+                  const BCToastData(
+                    title: 'Saved',
+                    description: 'This sits above the keys, not behind them.',
+                    variant: BCToastVariant.success,
+                    placement: BCToastPlacement.bottom,
+                  ),
+                ),
+                child: const Text('Show while focused'),
+              ),
+            ],
+          ),
+        ),
+        UsageVariant(
           title: 'Persistent',
           builder: (context) => BCButton(
             variant: BCButtonVariant.outline,

@@ -166,7 +166,8 @@ class BCToastProvider extends StatefulWidget {
   /// Distance from the top safe area to a [BCToastPlacement.top] toast.
   final double topInset;
 
-  /// Distance from the bottom safe area to a [BCToastPlacement.bottom] toast.
+  /// Distance from the bottom safe area — or from the keyboard, whenever it
+  /// covers more — to a [BCToastPlacement.bottom] toast.
   final double bottomInset;
 
   /// Distance from the left and right edges.
@@ -375,13 +376,22 @@ class _BCToastProviderState extends State<BCToastProvider>
     final viewPadding = MediaQuery.paddingOf(context);
     final viewportHeight = MediaQuery.sizeOf(context).height;
 
+    // The keyboard. A bottom toast that ignores it comes up behind the keys,
+    // where there is nothing to see. Unlike BCOverlayAnchor, the ambient
+    // MediaQuery is the right source here, because this Stack is laid out
+    // exactly where the toasts are drawn: a provider mounted above the app —
+    // the documented spot — sees the real keyboard and lifts clear of it,
+    // while one sitting inside a Scaffold that already resized itself around
+    // the keyboard reads the zero that Scaffold reports and stays put.
+    final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
+
     return Directionality(
       textDirection: Directionality.maybeOf(context) ?? TextDirection.ltr,
       child: Stack(
         children: [
           widget.child,
           for (final placement in BCToastPlacement.values)
-            _buildStack(placement, viewPadding, viewportHeight),
+            _buildStack(placement, viewPadding, keyboardInset, viewportHeight),
         ],
       ),
     );
@@ -391,6 +401,7 @@ class _BCToastProviderState extends State<BCToastProvider>
   Widget _buildStack(
     BCToastPlacement placement,
     EdgeInsets viewPadding,
+    double keyboardInset,
     double viewportHeight,
   ) {
     final entries = [
@@ -409,7 +420,11 @@ class _BCToastProviderState extends State<BCToastProvider>
       left: widget.horizontalInset,
       right: widget.horizontalInset,
       top: isTop ? viewPadding.top + widget.topInset : null,
-      bottom: isTop ? null : viewPadding.bottom + widget.bottomInset,
+      // `padding.bottom` drops to zero the moment the keyboard covers the
+      // home indicator, so the taller of the two is the obstruction to clear.
+      bottom: isTop
+          ? null
+          : math.max(viewPadding.bottom, keyboardInset) + widget.bottomInset,
       // Toasts render above the app, outside any Scaffold. A transparent
       // Material provides the proper DefaultTextStyle so text isn't drawn
       // with Flutter's yellow "missing Material" underline.
