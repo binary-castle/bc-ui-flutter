@@ -1,5 +1,6 @@
 import 'package:bc_ui/bc_ui.dart';
 import 'package:bc_ui/src/data/bc_country_data.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -181,6 +182,106 @@ void main() {
       // BCLabel is a Text.rich carrying 'Mobile' plus a styled ' *'.
       expect(find.textContaining('Mobile', findRichText: true), findsOneWidget);
       expect(find.text('We only text you about deliveries.'), findsOneWidget);
+    });
+  });
+
+  group('BCPhoneField inline', () {
+    testWidgets('drops the chrome the form section draws for it',
+        (tester) async {
+      await tester.pumpWidget(
+        _app(const BCPhoneField(label: 'Mobile', inline: true)),
+      );
+      await tester.pump();
+
+      expect(tester.widget<BCInput>(find.byType(BCInput)).variant,
+          BCInputVariant.plain);
+      // The divider marks the edge of a box, and there is no box now.
+      expect(find.byType(BCSeparator), findsNothing);
+    });
+
+    testWidgets('sets the label beside the number rather than above it',
+        (tester) async {
+      await tester.pumpWidget(
+        _app(const BCPhoneField(label: 'Mobile', inline: true)),
+      );
+      await tester.pump();
+
+      final label = tester.getRect(find.byType(BCLabel));
+      final field = tester.getRect(find.byType(BCInput));
+      expect(label.center.dy, moreOrLessEquals(field.center.dy, epsilon: 1));
+      expect(label.right, lessThanOrEqualTo(field.left));
+    });
+
+    testWidgets('stacked mode still puts the label above', (tester) async {
+      await tester.pumpWidget(_app(const BCPhoneField(label: 'Mobile')));
+      await tester.pump();
+
+      final label = tester.getRect(find.byType(BCLabel));
+      final field = tester.getRect(find.byType(BCInput));
+      expect(label.bottom, lessThanOrEqualTo(field.top));
+      expect(find.byType(BCSeparator), findsOneWidget);
+    });
+
+    testWidgets('pads the row the way SwiftUI pads a form row',
+        (tester) async {
+      await tester.pumpWidget(
+        _app(const BCPhoneField(label: 'Mobile', inline: true)),
+      );
+      await tester.pump();
+
+      final padding = tester.widget<Padding>(
+        find
+            .descendant(
+              of: find.byType(BCPhoneField),
+              matching: find.byType(Padding),
+            )
+            .first,
+      );
+      expect(padding.padding, const EdgeInsetsDirectional.fromSTEB(20, 6, 6, 6));
+    });
+
+    testWidgets('the message still lands under the row', (tester) async {
+      await tester.pumpWidget(_app(const BCPhoneField(
+        label: 'Mobile',
+        inline: true,
+        errorText: 'That number is already registered.',
+      )));
+      await tester.pump();
+
+      final error = tester.getRect(find.byType(BCFieldError));
+      final field = tester.getRect(find.byType(BCInput));
+      expect(error.top, greaterThanOrEqualTo(field.bottom));
+      expect(error.left, lessThan(field.left));
+    });
+
+    testWidgets('lines up with a native row in a CupertinoFormSection',
+        (tester) async {
+      BCPhoneNumber? seen;
+      await tester.pumpWidget(_app(
+        CupertinoFormSection.insetGrouped(
+          header: const Text('CONTACT'),
+          children: [
+            CupertinoTextFormFieldRow(prefix: const Text('Name')),
+            BCPhoneField(
+              label: 'Mobile',
+              inline: true,
+              initialCountry: IsoCode.US,
+              onChanged: (value) => seen = value,
+            ),
+          ],
+        ),
+      ));
+      await tester.pump();
+
+      // The whole point: our label starts exactly where the native one does.
+      expect(
+        tester.getRect(find.byType(BCLabel)).left,
+        moreOrLessEquals(tester.getRect(find.text('Name')).left, epsilon: 0.5),
+      );
+
+      await _type(tester, '2015550123', field: find.byType(EditableText).last);
+      expect(seen?.e164, '+12015550123');
+      expect(tester.takeException(), isNull);
     });
   });
 

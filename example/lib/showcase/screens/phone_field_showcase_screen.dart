@@ -1,7 +1,7 @@
 import 'package:bc_ui/bc_ui.dart';
 import 'package:example/showcase/presentation/usage_variant_page_view.dart';
 import 'package:example/showcase/showcase_common.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 
 class PhoneFieldShowcaseScreen extends StatelessWidget {
   const PhoneFieldShowcaseScreen({super.key});
@@ -68,6 +68,10 @@ class PhoneFieldShowcaseScreen extends StatelessWidget {
           ),
         ),
         UsageVariant(
+          title: 'In a Cupertino form',
+          builder: (context) => const _InlineFormDemo(),
+        ),
+        UsageVariant(
           title: 'Disabled',
           builder: (context) => const BCPhoneField(
             label: 'Mobile',
@@ -75,6 +79,39 @@ class PhoneFieldShowcaseScreen extends StatelessWidget {
                 BCPhoneNumber(isoCode: IsoCode.GB, nsn: '7400123456'),
             isDisabled: true,
           ),
+        ),
+      ],
+    );
+  }
+}
+
+/// `inline: true` in the place it is for — a row of an iOS grouped form,
+/// sitting between two native ones.
+class _InlineFormDemo extends StatelessWidget {
+  const _InlineFormDemo();
+
+  @override
+  Widget build(BuildContext context) {
+    return CupertinoFormSection.insetGrouped(
+      header: const Text('CONTACT'),
+      footer: const Text(
+        'The section draws the background and the hairlines between rows, so '
+        'the field draws neither and its label moves beside the number.',
+      ),
+      children: [
+        CupertinoTextFormFieldRow(
+          prefix: const Text('Name'),
+          placeholder: 'Jane Doe',
+        ),
+        const BCPhoneField(
+          label: 'Mobile',
+          inline: true,
+          initialCountry: IsoCode.BD,
+          preferredCountries: [IsoCode.BD, IsoCode.GB, IsoCode.US],
+        ),
+        CupertinoTextFormFieldRow(
+          prefix: const Text('Email'),
+          placeholder: 'jane@example.com',
         ),
       ],
     );

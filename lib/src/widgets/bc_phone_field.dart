@@ -151,6 +151,7 @@ class BCPhoneField extends StatefulWidget {
     this.isInvalid = false,
     this.isDisabled = false,
     this.variant = BCInputVariant.primary,
+    this.inline = false,
     this.controller,
     this.focusNode,
     this.textInputAction,
@@ -244,6 +245,35 @@ class BCPhoneField extends StatefulWidget {
 
   final bool isDisabled;
   final BCInputVariant variant;
+
+  /// Lays the field out as a row of an iOS grouped form: no box, no shadow,
+  /// no focus ring, and the label beside the number rather than above it.
+  ///
+  /// Made to be dropped straight into a `CupertinoFormSection`'s children.
+  /// The section draws the row background and the hairlines between rows, so
+  /// the field must not draw its own; the row padding is the (20, 6, 6, 6)
+  /// SwiftUI's `Form` uses, which is what `CupertinoFormRow` uses too, so
+  /// this field and the native rows beside it line up. Do not wrap it in a
+  /// `CupertinoFormRow` as well — you would get that padding twice.
+  ///
+  /// [variant] is ignored while this is on, and the country button drops its
+  /// divider: that hairline marks the edge of a box, and a form row has none.
+  ///
+  /// ```dart
+  /// CupertinoFormSection.insetGrouped(
+  ///   header: const Text('CONTACT'),
+  ///   children: [
+  ///     CupertinoTextFormFieldRow(prefix: const Text('Name')),
+  ///     BCPhoneField(
+  ///       label: 'Mobile',
+  ///       inline: true,
+  ///       initialCountry: IsoCode.BD,
+  ///       onChanged: (value) => setState(() => _phone = value),
+  ///     ),
+  ///   ],
+  /// )
+  /// ```
+  final bool inline;
 
   /// Holds the *formatted national part* — `(201) 555-0123`, never the dial
   /// code. Create and dispose it yourself; the field only reads and rewrites
@@ -488,6 +518,14 @@ class _BCPhoneFieldState extends State<BCPhoneField> {
     widget.onCountryChanged?.call(isoCode);
   }
 
+  /// What SwiftUI's `Form` pads a row by, and so `CupertinoFormRow` too —
+  /// an inline field lines up with the native rows above and below it.
+  static const EdgeInsetsDirectional _inlineRowPadding =
+      EdgeInsetsDirectional.fromSTEB(20, 6, 6, 6);
+
+  /// An iOS form row is 44 tall, 6 of which is padding at either end.
+  static const double _inlineFieldHeight = 32;
+
   /// The caller's error always wins: it knows things the field cannot, like
   /// 'this number is already registered'.
   String? get _effectiveError =>
@@ -521,13 +559,17 @@ class _BCPhoneFieldState extends State<BCPhoneField> {
             curve: Curves.easeOut,
             child: Icon(Icons.keyboard_arrow_down, size: 18, color: bc.muted),
           ),
-          const SizedBox(width: 8),
-          // A vertical BCSeparator is height: double.infinity, and the Row
-          // hands its children unbounded height — it needs a bounded box.
-          const SizedBox(
-            height: 24,
-            child: BCSeparator(orientation: BCSeparatorOrientation.vertical),
-          ),
+          // The divider marks the edge of the boxed field's prefix. A form
+          // row has no box to divide, and iOS draws nothing there.
+          if (!widget.inline) ...[
+            const SizedBox(width: 8),
+            // A vertical BCSeparator is height: double.infinity, and the Row
+            // hands its children unbounded height — it needs a bounded box.
+            const SizedBox(
+              height: 24,
+              child: BCSeparator(orientation: BCSeparatorOrientation.vertical),
+            ),
+          ],
         ],
       ),
     );
@@ -540,7 +582,8 @@ class _BCPhoneFieldState extends State<BCPhoneField> {
     final Widget field = BCInput(
       controller: _controller,
       focusNode: _focusNode,
-      variant: widget.variant,
+      variant: widget.inline ? BCInputVariant.plain : widget.variant,
+      minHeight: widget.inline ? _inlineFieldHeight : 48,
       placeholder: widget.placeholder ?? countryExampleNumber(_isoCode),
       isInvalid: _invalid,
       isDisabled: widget.isDisabled,
@@ -584,31 +627,67 @@ class _BCPhoneFieldState extends State<BCPhoneField> {
       ),
     );
 
-    // Always the same shape, even with nothing above or below the field.
-    // The blur error appears and disappears mid-interaction, and swapping
-    // between a bare field and a wrapped one would re-parent the subtree —
-    // unmounting the country picker while its sheet was still open, so the
-    // pick came back to a dead State and was dropped on the floor.
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (widget.label != null) ...[
-          BCLabel(
+    final Widget? label = widget.label == null
+        ? null
+        : BCLabel(
             widget.label!,
             isRequired: widget.isRequired,
             isInvalid: _invalid,
             isDisabled: widget.isDisabled,
-          ),
+          );
+
+    final Widget? footer = error != null
+        ? BCFieldError(error)
+        : widget.description != null
+            ? BCDescription(widget.description!, isDisabled: widget.isDisabled)
+            : null;
+
+    // Always the same shape, even with nothing above or below the field.
+    // The blur error appears and disappears mid-interaction, and swapping
+    // between a bare field and a wrapped one would re-parent the subtree —
+    // unmounting the country picker while its sheet was still open, so the
+    // pick came back to a dead State and was dropped on the floor. Both
+    // layouts below keep the field at a fixed position for the same reason.
+    if (widget.inline) {
+      return Padding(
+        padding: _inlineRowPadding,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                // Natural width, the way an iOS row's prefix sits — the
+                // number then takes whatever is left, as its value does.
+                if (label != null) ...[
+                  label,
+                  // What an iOS row leaves between its prefix and its value.
+                  const SizedBox(width: BCSpacing.sm),
+                ],
+                Expanded(child: field),
+              ],
+            ),
+            if (footer != null) ...[
+              const SizedBox(height: BCSpacing.xs),
+              footer,
+            ],
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (label != null) ...[
+          label,
           const SizedBox(height: BCSpacing.sm),
         ],
         field,
-        if (error != null) ...[
+        if (footer != null) ...[
           const SizedBox(height: BCSpacing.sm),
-          BCFieldError(error),
-        ] else if (widget.description != null) ...[
-          const SizedBox(height: BCSpacing.sm),
-          BCDescription(widget.description!, isDisabled: widget.isDisabled),
+          footer,
         ],
       ],
     );
