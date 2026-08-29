@@ -2,8 +2,15 @@ import 'dart:ui';
 
 /// HeroUI Native semantic color palettes, precomputed from the oklch source
 /// tokens in heroui-native/src/styles/variables.css and the color-mix(in
-/// oklab, ...) formulas in theme.css. Regenerate with the gen_colors.py
-/// script if upstream tokens change — do not hand-edit individual values.
+/// oklab, ...) formulas in theme.css. Keep values in step with upstream when
+/// those tokens change, and prefer a whole-palette resync over one-off edits.
+///
+/// Local divergence: `overlay` is *not* upstream's value. HeroUI sets it equal
+/// to `surface`, which leaves a card or field on a sheet with no edge against
+/// the panel under it — and dark surfaces carry no shadow or border to fall
+/// back on. Both themes therefore give `overlay` its own value: it sits just
+/// below `surface` in light (white is already the ceiling, so the sheet reads
+/// as a recessed tray) and just above it in dark. Preserve this on a resync.
 ///
 /// Naming note: `defaultColor` corresponds to HeroUI's `default` token
 /// (`default` is a reserved word in Dart).
@@ -18,7 +25,7 @@ abstract final class BCColorsLight {
   static const Color surfaceSecondaryForeground = Color(0xFF18181B);
   static const Color surfaceTertiary = Color(0xFFEAEAEB);
   static const Color surfaceTertiaryForeground = Color(0xFF18181B);
-  static const Color overlay = Color(0xFFFFFFFF);
+  static const Color overlay = Color(0xFFF7F7F8);
   static const Color overlayForeground = Color(0xFF18181B);
   static const Color backdrop = Color(0x33000000);
   static const Color muted = Color(0xFF71717A);
@@ -85,7 +92,7 @@ abstract final class BCColorsDark {
   static const Color surfaceSecondaryForeground = Color(0xFFFCFCFC);
   static const Color surfaceTertiary = Color(0xFF262728);
   static const Color surfaceTertiaryForeground = Color(0xFFFCFCFC);
-  static const Color overlay = Color(0xFF18181B);
+  static const Color overlay = Color(0xFF1F1F23);
   static const Color overlayForeground = Color(0xFFFCFCFC);
   static const Color backdrop = Color(0x33000000);
   static const Color muted = Color(0xFF9F9FA9);
