@@ -698,6 +698,24 @@ BCPhoneField(
 BCPhoneField(
   countries: const [IsoCode.BD, IsoCode.IN, IsoCode.PK],
   formatCountryName: (isoCode, name) => isoCode == IsoCode.US ? 'USA' : name,
+);
+
+// inline: a row of an iOS grouped form rather than a boxed field. The
+// section draws the background and the hairlines, so the field draws
+// neither, the label moves beside the number, and the row is padded the
+// (20, 6, 6, 6) a native CupertinoFormRow uses -- so the two line up.
+// Drop it straight into the section; do not wrap it in a form row as well.
+CupertinoFormSection.insetGrouped(
+  header: const Text('CONTACT'),
+  children: [
+    CupertinoTextFormFieldRow(prefix: const Text('Name')),
+    BCPhoneField(
+      label: 'Mobile',
+      inline: true,
+      initialCountry: IsoCode.BD,
+      onChanged: (value) => setState(() => _phone = value),
+    ),
+  ],
 );''',
     'BCSelect': '''// The default: an anchored list under the trigger.
 BCSelect<String>(

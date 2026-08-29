@@ -1634,7 +1634,7 @@ Single-line text input primitive.
 | `prefix` | `Widget?` | — |  |
 | `suffix` | `Widget?` | — |  |
 
-**`BCInputVariant`** — `primary`, `secondary`
+**`BCInputVariant`** — `primary`, `secondary`, `plain`
 
 ### BCTextField
 
@@ -1698,7 +1698,7 @@ BCTextField(
 | `autocorrect` | `bool` | `true` |  |
 | `enableSuggestions` | `bool` | `true` |  |
 
-**`BCInputVariant`** — `primary`, `secondary`
+**`BCInputVariant`** — `primary`, `secondary`, `plain`
 
 </details>
 
@@ -1737,7 +1737,7 @@ Multi-line input.
 | `onSubmitted` | `ValueChanged<String>?` | — |  |
 | `textCapitalization` | `TextCapitalization` | `TextCapitalization.none` |  |
 
-**`BCInputVariant`** — `primary`, `secondary`
+**`BCInputVariant`** — `primary`, `secondary`, `plain`
 
 ### BCPasswordInput
 
@@ -1756,7 +1756,7 @@ Input with a reveal toggle.
 | `onSubmitted` | `ValueChanged<String>?` | — |  |
 | `textInputAction` | `TextInputAction?` | — |  |
 
-**`BCInputVariant`** — `primary`, `secondary`
+**`BCInputVariant`** — `primary`, `secondary`, `plain`
 
 ### BCSearchField
 
@@ -1774,7 +1774,7 @@ Input with a search icon and a clear button.
 | `onSubmitted` | `ValueChanged<String>?` | — |  |
 | `onClear` | `VoidCallback?` | — |  |
 
-**`BCInputVariant`** — `primary`, `secondary`
+**`BCInputVariant`** — `primary`, `secondary`, `plain`
 
 ### BCInputOTP
 
@@ -1878,7 +1878,7 @@ Read-only field that opens a calendar in a dialog, a popover or a bottom sheet (
 | `presentation` | `BCPickerPresentation` | `BCPickerPresentation.dialog` | Where the calendar appears: a dialog (default), a popover anchored to the field, or a bottom sheet. Selecting a day commits and closes in all three. |
 | `icon` | `Widget` | `const Icon(Icons.calendar_today_outlined)` | Trailing icon; defaults to a calendar glyph. |
 
-**`BCInputVariant`** — `primary`, `secondary`
+**`BCInputVariant`** — `primary`, `secondary`, `plain`
 
 **`BCPickerPresentation`** — `popover`, `dialog`, `bottomSheet`
 
@@ -1926,7 +1926,7 @@ Read-only field that opens the hour/minute wheels in a dialog, a popover or a bo
 | `presentation` | `BCPickerPresentation` | `BCPickerPresentation.dialog` | Where the wheels appear: a dialog with Cancel / Confirm (default), a popover anchored to the field, or a bottom sheet. Popover and sheet apply each spin live. |
 | `icon` | `Widget` | `const Icon(Icons.access_time)` | Trailing icon; defaults to a clock glyph. |
 
-**`BCInputVariant`** — `primary`, `secondary`
+**`BCInputVariant`** — `primary`, `secondary`, `plain`
 
 **`BCPickerPresentation`** — `popover`, `dialog`, `bottomSheet`
 
@@ -2002,7 +2002,7 @@ BCDateTimePicker(
 
 **`BCPickerPresentation`** — `popover`, `dialog`, `bottomSheet`
 
-**`BCInputVariant`** — `primary`, `secondary`
+**`BCInputVariant`** — `primary`, `secondary`, `plain`
 
 <details><summary><code>BCDateTimeWheel</code></summary>
 
@@ -2092,6 +2092,24 @@ BCPhoneField(
   countries: const [IsoCode.BD, IsoCode.IN, IsoCode.PK],
   formatCountryName: (isoCode, name) => isoCode == IsoCode.US ? 'USA' : name,
 );
+
+// inline: a row of an iOS grouped form rather than a boxed field. The
+// section draws the background and the hairlines, so the field draws
+// neither, the label moves beside the number, and the row is padded the
+// (20, 6, 6, 6) a native CupertinoFormRow uses -- so the two line up.
+// Drop it straight into the section; do not wrap it in a form row as well.
+CupertinoFormSection.insetGrouped(
+  header: const Text('CONTACT'),
+  children: [
+    CupertinoTextFormFieldRow(prefix: const Text('Name')),
+    BCPhoneField(
+      label: 'Mobile',
+      inline: true,
+      initialCountry: IsoCode.BD,
+      onChanged: (value) => setState(() => _phone = value),
+    ),
+  ],
+);
 ```
 
 | Prop | Type | Default | Notes |
@@ -2118,6 +2136,7 @@ BCPhoneField(
 | `isInvalid` | `bool` | `false` | Forces the invalid ring without a message, the way every other bc_ui field takes it. |
 | `isDisabled` | `bool` | `false` |  |
 | `variant` | `BCInputVariant` | `BCInputVariant.primary` |  |
+| `inline` | `bool` | `false` | Lays the field out as a row of an iOS grouped form: no box, no shadow, no focus ring, and the label beside the number rather than above it.  Made to be dropped straight into a `CupertinoFormSection`'s children. The section draws the row background and the hairlines between rows, so the field must not draw its own; the row padding is the (20, 6, 6, 6) SwiftUI's `Form` uses, which is what `CupertinoFormRow` uses too, so this field and the native rows beside it line up. Do not wrap it in a `CupertinoFormRow` as well — you would get that padding twice.  `variant` is ignored while this is on, and the country button drops its divider: that hairline marks the edge of a box, and a form row has none.  ```dart CupertinoFormSection.insetGrouped( header: const Text('CONTACT'), children: ` CupertinoTextFormFieldRow(prefix: const Text('Name')), BCPhoneField( label: 'Mobile', inline: true, initialCountry: IsoCode.BD, onChanged: (value) => setState(() => _phone = value), ), `, ) ``` |
 | `controller` | `TextEditingController?` | — | Holds the *formatted national part* — `(201) 555-0123`, never the dial code. Create and dispose it yourself; the field only reads and rewrites it. Use `onChanged` for the number you send to a server. |
 | `focusNode` | `FocusNode?` | — | Focus for the number, not for the country button. Blur on this node is what surfaces the validation message. |
 | `textInputAction` | `TextInputAction?` | — |  |
@@ -2128,7 +2147,7 @@ BCPhoneField(
 
 **`BCSelectPresentation`** — `popover`, `bottomSheet`, `wheel`
 
-**`BCInputVariant`** — `primary`, `secondary`
+**`BCInputVariant`** — `primary`, `secondary`, `plain`
 
 <details><summary><code>BCPhoneNumber</code></summary>
 

@@ -6,12 +6,26 @@ import '../tokens/bc_radius.dart';
 import '../tokens/bc_shapes.dart';
 import '../tokens/bc_typography.dart';
 
-enum BCInputVariant { primary, secondary }
+enum BCInputVariant {
+  primary,
+  secondary,
+
+  /// No background, no shadow, no focus ring and no horizontal padding —
+  /// just the text with its prefix and suffix.
+  ///
+  /// For a field sitting inside chrome something else already drew: a row in
+  /// an iOS grouped form, a table cell, a toolbar. That container then owns
+  /// the shape, the padding, and telling the user the value is wrong —
+  /// a plain field draws none of it.
+  plain,
+}
 
 /// HeroUI Native Input (input.css): min-height 48, 12px horizontal padding,
 /// 14px continuous corners, field background + field shadow (primary) or
 /// `default` background (secondary), 2px accent focus outline
 /// (danger when invalid), muted placeholder.
+///
+/// [BCInputVariant.plain] keeps the text and drops every bit of that chrome.
 class BCInput extends StatefulWidget {
   const BCInput({
     super.key,
@@ -125,8 +139,14 @@ class _BCInputState extends State<BCInput> {
   Widget build(BuildContext context) {
     final bc = context.bcTheme;
 
+    final plain = widget.variant == BCInputVariant.plain;
+
     final BorderSide side;
-    if (widget.isInvalid) {
+    if (plain) {
+      // Nothing to draw a ring around. The row owns the shape, and an invalid
+      // value is said out loud by the message underneath instead.
+      side = BorderSide.none;
+    } else if (widget.isInvalid) {
       side = BorderSide(color: bc.danger, width: 2);
     } else if (_isFocused) {
       side = BorderSide(color: bc.accent, width: 2);
@@ -169,9 +189,11 @@ class _BCInputState extends State<BCInput> {
     Widget field = Container(
       constraints: BoxConstraints(minHeight: widget.minHeight),
       decoration: ShapeDecoration(
-        color: widget.variant == BCInputVariant.primary
-            ? bc.field
-            : bc.defaultColor,
+        color: switch (widget.variant) {
+          BCInputVariant.primary => bc.field,
+          BCInputVariant.secondary => bc.defaultColor,
+          BCInputVariant.plain => null,
+        },
         shape: BCShapes.continuous(BCRadius.field, side: side),
         shadows: widget.variant == BCInputVariant.primary
             ? bc.fieldShadow.shadows
@@ -179,7 +201,7 @@ class _BCInputState extends State<BCInput> {
       ),
       padding: widget.contentPadding ??
           EdgeInsets.symmetric(
-            horizontal: 12,
+            horizontal: plain ? 0 : 12,
             vertical: widget.verticalPadding ?? 0,
           ),
       alignment: multiline ? Alignment.topLeft : null,

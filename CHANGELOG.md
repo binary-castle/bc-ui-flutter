@@ -1,3 +1,40 @@
+## 0.6.0
+
+**Phone field**
+
+* `BCPhoneField` gains `inline`, for the long forms where a stack of boxed
+  fields is more furniture than the page can carry. It lays the field out as a
+  row of an iOS grouped form: no box, no shadow, no focus ring, the label
+  beside the number rather than above it, and the country button without its
+  divider — that hairline marks the edge of a box, and there is no box now.
+  The row is padded the (20, 6, 6, 6) SwiftUI's `Form` uses, which is what
+  `CupertinoFormRow` uses too, so the field lines up with the native rows
+  above and below it.
+* Drop it straight into a `CupertinoFormSection`'s children; wrapping it in a
+  `CupertinoFormRow` as well would pad it twice. `variant` is ignored while
+  `inline` is on, and the description and the validation message still land
+  under the row, left-aligned, where the section expects them.
+* Nothing else about the field changes: the country sheet, the live
+  validation, the trunk-prefix stripping and the paste-an-international-number
+  handling all behave as they do in a boxed field.
+* The PhoneField showcase gains an *In a Cupertino form* variant — the field
+  between two `CupertinoTextFormFieldRow`s, which is the case the above is
+  about.
+
+**Input**
+
+* `BCInputVariant.plain` — no background, no shadow, no focus ring and no
+  horizontal padding, just the text with its prefix and suffix. It is what
+  `inline` is built on, and it is for any field sitting inside chrome
+  something else already drew: a form row, a table cell, a toolbar. That
+  container then owns the shape, the padding, and telling the user the value
+  is wrong.
+* Adding a value to `BCInputVariant` is why this is a minor release rather
+  than a patch: an exhaustive `switch` over it in your own code now needs a
+  third arm. The fields that read the enum by comparison — `BCDateField`,
+  `BCTimeField`, `BCDateTimePicker` — treat `plain` as `secondary`, and are
+  otherwise untouched.
+
 ## 0.5.0
 
 **Tokens**
