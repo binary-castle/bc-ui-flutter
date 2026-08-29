@@ -102,15 +102,27 @@ void main() {
       BCToastPlacement providerPlacement = BCToastPlacement.bottom,
       BCToastPlacement? toastPlacement,
       bool isSwipeable = true,
+      ValueNotifier<double>? keyboard,
     }) async {
+      final keyboardInset = keyboard ?? ValueNotifier(0.0);
       late BuildContext appContext;
       await tester.pumpWidget(
         MaterialApp(
           theme: BCTheme.light(),
-          builder: (context, child) => BCToastProvider(
-            placement: providerPlacement,
-            isSwipeable: isSwipeable,
-            child: child!,
+          builder: (context, child) => ValueListenableBuilder<double>(
+            valueListenable: keyboardInset,
+            // Stands the keyboard up the way the real one reaches a provider
+            // mounted here: as a bottom view inset above it.
+            builder: (context, inset, _) => MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                viewInsets: EdgeInsets.only(bottom: inset),
+              ),
+              child: BCToastProvider(
+                placement: providerPlacement,
+                isSwipeable: isSwipeable,
+                child: child!,
+              ),
+            ),
           ),
           home: Scaffold(
             body: Builder(
@@ -161,6 +173,43 @@ void main() {
       final screenHeight = tester.getSize(find.byType(MaterialApp)).height;
       expect(tester.getCenter(find.text('Swipe me')).dy,
           lessThan(screenHeight / 2));
+    });
+
+    testWidgets('a bottom toast lifts clear of the keyboard', (tester) async {
+      final keyboard = ValueNotifier(0.0);
+      addTearDown(keyboard.dispose);
+      await showSettled(tester, keyboard: keyboard);
+      final resting = tester.getCenter(find.text('Swipe me')).dy;
+
+      keyboard.value = 300;
+      await tester.pump();
+      final lifted = tester.getCenter(find.text('Swipe me')).dy;
+
+      // The whole keyboard, not a fraction of it, and the card lands above the
+      // keys rather than behind them.
+      expect(resting - lifted, closeTo(300, 1));
+      final screenHeight = tester.getSize(find.byType(MaterialApp)).height;
+      expect(lifted, lessThan(screenHeight - 300));
+
+      // And it settles back down once the keyboard goes away.
+      keyboard.value = 0;
+      await tester.pump();
+      expect(tester.getCenter(find.text('Swipe me')).dy, closeTo(resting, 0.5));
+    });
+
+    testWidgets('the keyboard leaves a top toast where it is', (tester) async {
+      final keyboard = ValueNotifier(0.0);
+      addTearDown(keyboard.dispose);
+      await showSettled(
+        tester,
+        providerPlacement: BCToastPlacement.top,
+        keyboard: keyboard,
+      );
+      final resting = tester.getCenter(find.text('Swipe me')).dy;
+
+      keyboard.value = 300;
+      await tester.pump();
+      expect(tester.getCenter(find.text('Swipe me')).dy, closeTo(resting, 0.5));
     });
 
     testWidgets('the card tracks the finger and snaps back below threshold',
