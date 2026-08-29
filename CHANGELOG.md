@@ -1,3 +1,31 @@
+## 0.5.0
+
+**Tokens**
+
+* `overlay` no longer duplicates `surface`. The two held the same value in both
+  themes, so anything painted on a sheet, dialog, menu or popover — a `BCCard`,
+  a `BCListGroup`, a text field — had no edge against the panel beneath it. In
+  dark the card vanished outright, since dark surfaces carry neither shadow nor
+  border and the fill was the only cue. `overlay` is now `#F7F7F8` in light and
+  `#1F1F23` in dark. Sheets and dialogs shift tone slightly as a result, which
+  is why this is a minor release rather than a patch.
+* Light and dark separate in opposite directions, deliberately. Light `surface`
+  is already pure white, so the sheet moves *down* and cards float lighter on
+  it, the way a grouped table reads on iOS; dark has headroom above `surface`,
+  so the sheet moves *up*. `overlayForeground` and `segment` were checked
+  against the new values and both still contrast comfortably — neither changed.
+* Custom accents are unaffected: nothing is derived from `overlay`, so
+  `BCThemeOverrides` recomputes exactly what it did before.
+
+**Toast, Navigation drawer**
+
+* `BCToast` and the modal `BCNavDrawer` now paint `overlay` rather than
+  `surface`. Both float above the page wearing the overlay shadow, so they
+  belong with the dialogs and sheets; they only matched before because the two
+  tokens happened to be equal. The permanent drawer keeps `background`, and the
+  bottom nav, toolbar and app header stay on `surface` — those read as page
+  chrome, not overlays.
+
 ## 0.4.3
 
 **Toast**
