@@ -434,10 +434,10 @@ class _BCHeaderToolbar extends StatelessWidget {
         children: [
           if (title != null)
             DefaultTextStyle(
-              style: BCTypography.textBase.copyWith(
+              style: BCTypography.textXl.copyWith(
                 fontWeight: BCTypography.semiBold,
                 color: onColor ?? bc.foreground,
-                letterSpacing: BCTypography.trackingTight(BCTypography.sizeBase),
+                letterSpacing: BCTypography.trackingTight(BCTypography.sizeXl),
                 height: 1.25,
               ),
               maxLines: 1,
