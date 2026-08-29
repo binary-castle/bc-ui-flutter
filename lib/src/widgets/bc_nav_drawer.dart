@@ -204,7 +204,7 @@ class BCNavDrawer extends StatelessWidget {
       ],
     );
 
-    final background = backgroundColor ?? (_isModal ? bc.surface : bc.background);
+    final background = backgroundColor ?? (_isModal ? bc.overlay : bc.background);
 
     if (!_isModal) {
       return Container(

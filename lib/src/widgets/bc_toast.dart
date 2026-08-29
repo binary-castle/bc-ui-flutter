@@ -554,7 +554,7 @@ class _BCToastCard extends StatelessWidget {
     return Container(
       clipBehavior: Clip.antiAlias,
       decoration: ShapeDecoration(
-        color: bc.surface,
+        color: bc.overlay,
         shape: BCShapes.continuous(
           BCRadius.xxxl,
           side: bc.overlayShadow.innerBorder ?? BorderSide.none,
