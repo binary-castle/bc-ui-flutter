@@ -36,7 +36,7 @@ enum BCAppHeaderVariant {
 /// Drop-in for Material's `AppBar` (it is a [PreferredSizeWidget], so it goes
 /// straight into `Scaffold.appBar`), but styled to the heroui palette: no
 /// elevation, a hairline `border` separator that fades in only once content
-/// scrolls under it, semibold 16px title with an optional muted subtitle, and
+/// scrolls under it, semibold 20px title with an optional muted subtitle, and
 /// press-feedback icon buttons ([BCHeaderIconButton]).
 ///
 /// ```dart
@@ -76,7 +76,7 @@ class BCAppHeader extends StatefulWidget implements PreferredSizeWidget {
 
   static const double defaultToolbarHeight = 56;
 
-  /// Styled with a 16px semibold [BCTypography] style when it is a [Text].
+  /// Styled with a 20px semibold [BCTypography] style when it is a [Text].
   final Widget? title;
 
   /// Secondary line under [title], muted 12px.
