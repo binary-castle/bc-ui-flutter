@@ -168,7 +168,7 @@ BCAppHeader(
 
 | Prop | Type | Default | Notes |
 |---|---|---|---|
-| `title` | `Widget?` | — | Styled with a 16px semibold `BCTypography` style when it is a `Text`. |
+| `title` | `Widget?` | — | Styled with a 20px semibold `BCTypography` style when it is a `Text`. |
 | `subtitle` | `Widget?` | — | Secondary line under `title`, muted 12px. |
 | `leading` | `Widget?` | — | Defaults to a back button when the route can be popped (a close button for fullscreen dialogs), unless `automaticallyImplyLeading` is false. |
 | `actions` | `List<Widget>` | `const []` |  |

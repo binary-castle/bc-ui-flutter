@@ -84,7 +84,7 @@ from memory, and if a component isn't listed here it isn't part of bc_ui.
 
 <!-- BEGIN GENERATED: catalog -->
 
-Generated from bc_ui 0.6.0.
+Generated from bc_ui 0.6.1.
 
 | Read this file | For these components |
 |---|---|

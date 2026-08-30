@@ -1,3 +1,22 @@
+## 0.6.1
+
+**App header**
+
+* The compact toolbar title goes from 16px to 20px semibold. It sat beside a
+  20px back chevron, which left the arrow as the loudest thing in the bar, and
+  a header title should lead over the control that leaves the screen. On
+  `BCSliverAppHeader` it read worse still: the compact title is what the 30px
+  large title folds into, and at 16px the fold gave up more than the scroll
+  had earned.
+* `BCAppHeader` and the collapsed `BCSliverAppHeader` share one toolbar, and
+  the large title has always collapsed *into* the compact title, so the two
+  move together. Splitting them would have put a 16px title on one screen and
+  a 20px title on the next.
+* Nothing in the API changes, which is why this is a patch — but it is visible
+  on every screen using either header, and a long title will ellipsize a
+  little sooner than it did. The 56px toolbar still has the room: a 20px title
+  over a 12px subtitle comes to about 41px.
+
 ## 0.6.0
 
 **Phone field**
