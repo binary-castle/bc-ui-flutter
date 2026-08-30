@@ -1,3 +1,69 @@
+## 0.7.0
+
+**Skeleton — text placeholders**
+
+* `BCSkeleton.text` builds a text placeholder from the type scale instead of
+  from hand-measured numbers. Each line takes the full line box of its
+  `BCTextType` at the reader's text size, so the block stands exactly as tall
+  as the text it replaces and nothing under it moves when the content lands.
+  A hand-sized bar cannot promise that: `height: 14` is a guess against a
+  `body` line box of 28, it drifts from the scale on a type resync, and it
+  does not grow when the reader turns text size up — so the jump is worst for
+  the readers least able to absorb it.
+
+  ```dart
+  BCSkeleton.text(type: BCTextType.h4)
+  BCSkeleton.text(lines: 3)
+  BCSkeleton.text(lines: 2, child: BCText(bio))
+  ```
+* Wrapping text in the plain constructor collapsed instead. With no `width`
+  or `height` the painter's child is a zero-size box, so
+  `BCSkeleton(child: BCText(...))` measured 0.0 x 0.0 while loading and
+  snapped to full size on arrival. The text constructor takes its size from
+  the type rather than from the child, so there is nothing left to collapse.
+* The painted bar is shorter than its line box — `textBarHeightFactor`, 0.875
+  of the font size — which leaves the type's own leading as the gap between
+  lines, so no separate spacing prop is needed. Above one line the last line
+  shortens to `lastLineFraction` (0.6 by default, and a prop where a call site
+  wants a different ragged edge) so a paragraph reads as prose rather than as
+  a stack of slabs.
+* `BCText` renders `code` as a padded chip rather than a bare line, so its
+  placeholder adds that same padding. Every one of the ten `BCTextType` values
+  now measures identically to the text it stands in for.
+* `BCSkeleton.text` carries `child`, `variant`, `animation` and the
+  `BCSkeletonGroup` cascade exactly as the box constructor does, so a text
+  placeholder drops into an existing group without special-casing.
+
+**Skeleton — placeholder colour**
+
+* The placeholder fill painted as solid `muted` instead of the 30% wash it was
+  meant to be. `BCSkeletonTheme.backgroundColor` builds the base correctly, but
+  the painter then reassigned its alpha — `Color.withValues(alpha:)` replaces
+  the channel rather than scaling it — so the 0.3 was discarded on every
+  variant. In light mode that painted `#71717A`, a *foreground* token darker
+  than every surface and border in the palette, which is why a loading page read
+  as a slab of dark bars against the screens around it. It now composites to
+  `#D4D4D7` on a card and `#404046` in dark, where it belongs.
+* Same line, same cause for `pulse`: it lerped opacity 0.5 to 1.0 against the
+  raw colour, so it throbbed between half and fully opaque muted. It now scales
+  the base and sweeps 0.15 to 0.30. `minOpacity` and `maxOpacity` keep their
+  meaning — they were always a fraction of the base, never an absolute.
+* The shimmer band was derived from the page `background` and lerped toward
+  black in light mode. It only read as a highlight because it was sweeping over
+  a wrongly-dark base; against a correct one it cleared it by about 2% in light
+  and was *darker* than it in dark, an inverted sweep. The band is now white in
+  both themes — 0.55 in light, 0.12 in dark — so fixing the base did not leave
+  the shimmer invisible.
+* The band also faded to `Colors.transparent` at both ends. Gradient stops
+  interpolate unpremultiplied, so transparent *black* pulled the ramp toward
+  grey and fringed the sweep darker than the base either side of its centre; it
+  was a highlight only at the exact midpoint. It now fades to a transparent copy
+  of the highlight, leaving alpha as the only thing that varies across the band.
+* Nothing in the API changes, which is why this is a patch — but every skeleton
+  on every screen looks different. `BCSkeletonShimmerAnimation.highlightColor`
+  still overrides the band, and a `decoration.color` still overrides the base,
+  including its alpha, which is now respected instead of forced opaque.
+
 ## 0.6.1
 
 **App header**

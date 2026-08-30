@@ -235,7 +235,7 @@ SUMMARY = {
     'BCRibbon': "Merchandising ribbon for product cards — 'Hot Sale', 'Nearby', '-30%'. Five forms — pill tag, edge flag, corner sash, full-width banner, bookmark — laid over a card and clipped to its corners where the form needs it. The corner band sizes itself to its label and takes `cornerOffset`/`cornerThickness`, so it runs from a thin floating stripe to a filled corner (`cornerOffset: 0`). The overlay never takes pointer events, so the card stays tappable.",
     'BCTagGroup': 'Wrapping list of selectable/removable tags.',
     'BCSeparator': 'Horizontal or vertical rule.',
-    'BCSkeleton': 'Loading placeholder with shimmer or pulse.',
+    'BCSkeleton': 'Loading placeholder with shimmer or pulse. `BCSkeleton.text` sizes itself from the type scale, so a text placeholder stands exactly as tall as the text it replaces and nothing shifts when the content lands.',
     'BCSpinner': 'Indeterminate loading indicator.',
     'BCRating': 'Star rating, read-only or interactive, with optional halves.',
     'BCEmptyState': 'Empty/zero-state block: icon or illustration, title, description and actions.',
@@ -608,14 +608,18 @@ const BCText('Muted caption', type: BCTextType.bodyXs, color: BCTextColor.muted)
 );''',
     'BCSkeleton': '''BCSkeletonGroup(
   isLoading: loading,
-  child: Column(
-    children: const [
-      BCSkeleton(width: 180, height: 20),
+  child: const Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      BCSkeleton.text(type: BCTextType.h4),
       SizedBox(height: 8),
-      BCSkeleton(width: 240, height: 20),
+      BCSkeleton.text(lines: 3),
     ],
   ),
-);''',
+);
+
+// Boxes of a known size — an avatar, a thumbnail, a card.
+const BCSkeleton(width: 48, height: 48);''',
     'BCEmptyState': '''BCEmptyState(
   icon: const Icon(Icons.inbox_outlined),
   title: 'No messages',
@@ -879,6 +883,12 @@ BCToast.show(context, const BCToastData(
 }
 
 MEMBERS = {
+    'BCSkeleton': [
+        ('const BCSkeleton.text({int lines, BCTextType type, double? lastLineFraction, Widget? child, double? width})', "Placeholder for text that has not loaded yet. Each line takes the full line box of `type` at the reader's text size, so the block stands exactly as tall as the text will and nothing under it moves when the content arrives. The plain constructor cannot promise that: a hand-sized bar drifts from the scale and does not grow with the reader's text size, and `BCSkeleton(child: BCText(...))` with no width or height measures 0x0 while loading. Pass `width` where the parent leaves the width unbounded."),
+        ('int lines', 'Lines to stand in for. Above one, the last line shortens so the block reads as prose rather than a stack of slabs.'),
+        ('BCTextType type', 'The type being replaced — it sets both the line box and the bar height. `code` accounts for the padding of its chip.'),
+        ('double? lastLineFraction', 'Width of the final line as a fraction of the block, applied only when `lines` is above 1. Defaults to 0.6.'),
+    ],
     'BCPhoneField': [
         ('static IsoCode? deviceCountry()', "The device's configured region — `en_GB` gives `IsoCode.GB`, and null when no preferred locale carries one the parser knows. What `initialCountry` uses when you leave it null. This is the phone's configured region, not where it physically is."),
         ('static String flagEmoji(IsoCode isoCode)', 'The flag as a regional-indicator emoji pair — `IsoCode.BD` becomes 🇧🇩.'),
