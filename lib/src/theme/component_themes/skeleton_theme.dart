@@ -1,4 +1,3 @@
-import 'package:bc_ui/src/theme/color_schemes.dart';
 import 'package:bc_ui/src/tokens/tokens.dart';
 import 'package:flutter/material.dart';
 
@@ -58,6 +57,19 @@ abstract final class BCSkeletonTheme {
   static const defaultSpeed = 1.0;
   static const defaultPulseMinOpacity = 0.5;
   static const defaultPulseMaxOpacity = 1.0;
+  static const shimmerHighlightAlphaLight = 0.55;
+  static const shimmerHighlightAlphaDark = 0.12;
+
+  /// A text placeholder takes one full line box per line, so a block of them
+  /// occupies exactly the height the real text will and nothing shifts when
+  /// it arrives. The painted bar is shorter than that box — close to the font
+  /// size — which is what leaves the leading as a gap and keeps a stack of
+  /// bars reading as prose rather than as slabs.
+  static const textBarHeightFactor = 0.875;
+
+  /// Only a wrapped paragraph gets a short final line; a single line fills
+  /// its width.
+  static const defaultLastLineFraction = 0.6;
 
   static BorderRadius get defaultBorderRadius =>
       BorderRadius.circular(BCRadius.md);
@@ -68,15 +80,39 @@ abstract final class BCSkeletonTheme {
     return colors.onSurfaceVariant.withValues(alpha: 0.3);
   }
 
+  /// The band has to read as *lighter* than the 30%-muted base in both
+  /// themes, so it is white in both and only the strength changes. Deriving
+  /// it from `background` left the light band ~2% lighter than the base and
+  /// the dark band darker than it, so neither sweep was visible once the base
+  /// stopped painting as the solid muted token.
   static Color shimmerHighlightColor(ColorScheme colors, {Color? override}) {
     if (override != null) return override;
 
-    final background = BCColorSchemes.background(colors.brightness);
-    if (colors.brightness == Brightness.dark) {
-      return Color.lerp(background, Colors.white, 0.1)!.withValues(alpha: 0.1);
-    }
+    final alpha = colors.brightness == Brightness.dark
+        ? shimmerHighlightAlphaDark
+        : shimmerHighlightAlphaLight;
 
-    return Color.lerp(background, Colors.black, 0.1)!.withValues(alpha: 0.75);
+    return Colors.white.withValues(alpha: alpha);
+  }
+
+  /// The line box [style] paints into, at the reader's text size. Measured
+  /// rather than derived: every type in the scale sets its own `height`, and
+  /// a fallback multiplier would drift from it on a resync.
+  static double textLineHeight(
+    TextStyle style,
+    TextScaler scaler,
+    TextDirection direction,
+  ) {
+    return TextPainter(
+      text: TextSpan(text: '', style: style),
+      textDirection: direction,
+      textScaler: scaler,
+    ).preferredLineHeight;
+  }
+
+  static double textBarHeight(TextStyle style, TextScaler scaler) {
+    final fontSize = style.fontSize ?? BCTypography.sizeBase;
+    return scaler.scale(fontSize) * textBarHeightFactor;
   }
 
   static Duration resolveShimmerDuration(BCSkeletonAnimation? animation) {

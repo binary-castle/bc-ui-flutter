@@ -49,7 +49,7 @@ or add it by hand:
 
 ```yaml
 dependencies:
-  bc_ui: ^0.6.1
+  bc_ui: ^0.7.0
 ```
 
 Requires Dart SDK `^3.12.1`. The only runtime dependency is

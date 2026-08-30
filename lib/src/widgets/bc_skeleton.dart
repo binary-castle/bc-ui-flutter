@@ -2,6 +2,8 @@ import 'dart:ui' show lerpDouble;
 
 import 'package:bc_ui/src/extensions/context_extension.dart';
 import 'package:bc_ui/src/theme/component_themes/skeleton_theme.dart';
+import 'package:bc_ui/src/tokens/tokens.dart';
+import 'package:bc_ui/src/widgets/bc_text.dart';
 import 'package:flutter/material.dart';
 
 export 'package:bc_ui/src/theme/component_themes/skeleton_theme.dart'
@@ -73,7 +75,39 @@ class BCSkeleton extends StatefulWidget {
     this.height,
     this.borderRadius,
     this.decoration,
-  });
+  }) : lines = 1,
+       type = BCTextType.body,
+       lastLineFraction = null,
+       _isText = false;
+
+  /// Placeholder for text that has not loaded yet.
+  ///
+  /// Each line takes the full line box of [type] at the reader's text size,
+  /// so the block stands exactly as tall as the text will and nothing shifts
+  /// when it arrives — which a hand-sized bar cannot promise. Give [child]
+  /// the text itself and the swap costs no layout at all. Pass [width] where
+  /// the parent leaves the width unbounded.
+  const BCSkeleton.text({
+    super.key,
+    this.lines = 1,
+    this.type = BCTextType.body,
+    this.lastLineFraction,
+    this.child,
+    this.isLoading = true,
+    this.variant = BCSkeletonVariant.shimmer,
+    this.animation,
+    this.isAnimatedStyleActive = true,
+    this.width,
+    this.borderRadius,
+  }) : height = null,
+       decoration = null,
+       _isText = true,
+       assert(lines > 0, 'lines must be at least 1'),
+       assert(
+         lastLineFraction == null ||
+             (lastLineFraction > 0 && lastLineFraction <= 1),
+         'lastLineFraction must be in (0, 1]',
+       );
 
   final Widget? child;
   final bool isLoading;
@@ -84,6 +118,20 @@ class BCSkeleton extends StatefulWidget {
   final double? height;
   final BorderRadius? borderRadius;
   final BoxDecoration? decoration;
+
+  /// Lines to stand in for. `BCSkeleton.text` only.
+  final int lines;
+
+  /// Type scale the placeholder replaces, which sets its line box and bar
+  /// height. `BCSkeleton.text` only.
+  final BCTextType type;
+
+  /// Width of the final line as a fraction of the block, applied only when
+  /// [lines] is above 1. Defaults to
+  /// [BCSkeletonTheme.defaultLastLineFraction]. `BCSkeleton.text` only.
+  final double? lastLineFraction;
+
+  final bool _isText;
 
   @override
   State<BCSkeleton> createState() => _BCSkeletonState();
@@ -179,7 +227,11 @@ class _BCSkeletonState extends State<BCSkeleton>
     return widget.decoration?.color ?? BCSkeletonTheme.backgroundColor(colors);
   }
 
-  Widget _buildSkeleton(ColorScheme colors) {
+  Widget _buildSkeleton(
+    ColorScheme colors, {
+    required double? width,
+    required double? height,
+  }) {
     final borderRadius = _borderRadius;
     final baseColor = _baseColor(colors);
     final highlightColor = BCSkeletonTheme.shimmerHighlightColor(
@@ -212,9 +264,59 @@ class _BCSkeletonState extends State<BCSkeleton>
             textDirection: Directionality.of(context),
             isAnimationDisabled: _isAnimationDisabled,
           ),
-          child: SizedBox(width: widget.width, height: widget.height),
+          child: SizedBox(width: width, height: height),
         ),
       ),
+    );
+  }
+
+  /// One bar per line, each sitting in the line box of its type. The bar
+  /// is shorter than the box, so the type's own leading becomes the gap
+  /// between lines and the block still measures what the text will.
+  Widget _buildTextSkeleton(BuildContext context) {
+    final colors = context.colors;
+    final style = BCText.resolveStyle(context, type: widget.type);
+    final scaler = MediaQuery.textScalerOf(context);
+    // BCText renders `code` as a padded chip rather than a bare line, so its
+    // box is the line plus that padding. The padding is fixed spacing and
+    // does not scale with the text.
+    final chipPadding = widget.type == BCTextType.code
+        ? BCSpacing.unit(0.5) * 2
+        : 0.0;
+    final lineHeight =
+        BCSkeletonTheme.textLineHeight(
+          style,
+          scaler,
+          Directionality.of(context),
+        ) +
+        chipPadding;
+    final barHeight = BCSkeletonTheme.textBarHeight(style, scaler);
+    final lastLineFraction =
+        widget.lastLineFraction ?? BCSkeletonTheme.defaultLastLineFraction;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: List.generate(widget.lines, (index) {
+        final isRagged = widget.lines > 1 && index == widget.lines - 1;
+
+        return SizedBox(
+          height: lineHeight,
+          child: FractionallySizedBox(
+            widthFactor: isRagged ? lastLineFraction : 1.0,
+            alignment: AlignmentDirectional.centerStart,
+            // The line box constrains height tightly; Center loosens it so
+            // the bar keeps its own height and sits in the middle of the box.
+            child: Center(
+              child: _buildSkeleton(
+                colors,
+                width: double.infinity,
+                height: barHeight,
+              ),
+            ),
+          ),
+        );
+      }),
     );
   }
 
@@ -240,7 +342,13 @@ class _BCSkeletonState extends State<BCSkeleton>
               key: ValueKey('skeleton-${_variant.name}'),
               width: widget.width,
               height: widget.height,
-              child: _buildSkeleton(context.colors),
+              child: widget._isText
+                  ? _buildTextSkeleton(context)
+                  : _buildSkeleton(
+                      context.colors,
+                      width: widget.width,
+                      height: widget.height,
+                    ),
             )
           : KeyedSubtree(
               key: const ValueKey('content'),
@@ -286,13 +394,18 @@ class _SkeletonPainter extends CustomPainter {
     final rect = Offset.zero & size;
     final rrect = borderRadius.resolve(textDirection).toRRect(rect);
 
-    var opacity = 1.0;
+    // The pulse range scales the base alpha rather than replacing it:
+    // baseColor is already a translucent 30% muted, and assigning
+    // withValues(alpha:) outright would repaint it as the solid muted
+    // foreground token, which is darker than every surface in the palette.
+    var opacityScale = 1.0;
     if (variant == BCSkeletonVariant.pulse && !isAnimationDisabled) {
       final t = pulseCurve.transform(progress.value);
-      opacity = lerpDouble(pulseMinOpacity, pulseMaxOpacity, t)!;
+      opacityScale = lerpDouble(pulseMinOpacity, pulseMaxOpacity, t)!;
     }
 
-    final fillPaint = Paint()..color = baseColor.withValues(alpha: opacity);
+    final fillPaint = Paint()
+      ..color = baseColor.withValues(alpha: baseColor.a * opacityScale);
     canvas.drawRRect(rrect, fillPaint);
 
     if (variant != BCSkeletonVariant.shimmer || isAnimationDisabled) return;
@@ -301,9 +414,14 @@ class _SkeletonPainter extends CustomPainter {
     final translateX = lerpDouble(-size.width, screenWidth, shimmerProgress)!;
     final shimmerRect = Rect.fromLTWH(translateX, 0, size.width, size.height);
 
+    // The band fades to a transparent *highlight*, not Colors.transparent:
+    // gradient stops interpolate unpremultiplied, so transparent black drags
+    // the ramp toward grey and fringes the sweep darker than the base on
+    // either side of its centre. Only alpha should vary across the band.
+    final edgeColor = highlightColor.withValues(alpha: 0);
     final shimmerPaint = Paint()
       ..shader = LinearGradient(
-        colors: [Colors.transparent, highlightColor, Colors.transparent],
+        colors: [edgeColor, highlightColor, edgeColor],
       ).createShader(shimmerRect);
 
     canvas.save();
