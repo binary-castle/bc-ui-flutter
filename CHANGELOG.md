@@ -1,3 +1,18 @@
+## 0.8.0
+
+**Date picker — first day of the week**
+
+* `BCCalendar`, `BCDateField` and `BCDatePickerDialog.show` take
+  `firstDayOfWeek` (`DateTime.monday` to `DateTime.sunday`). Weeks used to
+  start on Sunday everywhere, which reads wrong in most of Europe, where the
+  week starts on Monday.
+
+  ```dart
+  BCDateField(value: date, onChanged: save, firstDayOfWeek: DateTime.monday)
+  ```
+* Left out, it follows the locale's `MaterialLocalizations.firstDayOfWeekIndex`,
+  and Sunday when there's none, as before.
+
 ## 0.7.0
 
 **Skeleton — text placeholders**
