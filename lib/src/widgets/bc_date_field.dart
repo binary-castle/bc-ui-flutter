@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart' show Icons;
+import 'package:flutter/material.dart' show Icons, MaterialLocalizations;
 import 'package:flutter/widgets.dart';
 
 import '../extensions/context_extension.dart';
@@ -33,7 +33,13 @@ class BCDateField extends StatefulWidget {
     this.formatDate,
     this.presentation = BCPickerPresentation.dialog,
     this.icon = const Icon(Icons.calendar_today_outlined),
+    this.firstDayOfWeek,
   });
+
+  /// The weekday the calendar's weeks start on, [DateTime.monday] to
+  /// [DateTime.sunday]. Null follows the locale ([MaterialLocalizations]),
+  /// Sunday where there is none. See [BCCalendar.firstDayOfWeek].
+  final int? firstDayOfWeek;
 
   final DateTime? value;
   final ValueChanged<DateTime>? onChanged;
@@ -94,6 +100,7 @@ class _BCDateFieldState extends State<BCDateField> {
       firstDate: _firstDate,
       lastDate: _lastDate,
       onDateSelected: onSelected,
+      firstDayOfWeek: widget.firstDayOfWeek,
     );
   }
 
@@ -105,6 +112,7 @@ class _BCDateFieldState extends State<BCDateField> {
           initialDate: widget.value,
           firstDate: _firstDate,
           lastDate: _lastDate,
+          firstDayOfWeek: widget.firstDayOfWeek,
         );
         if (picked != null) _commit(picked);
       case BCPickerPresentation.popover:
@@ -215,7 +223,13 @@ class BCCalendar extends StatefulWidget {
     required this.firstDate,
     required this.lastDate,
     required this.onDateSelected,
+    this.firstDayOfWeek,
   });
+
+  /// The weekday weeks start on, [DateTime.monday] to [DateTime.sunday]:
+  /// Monday in most of Europe, Sunday in the US. Null follows the locale's
+  /// [MaterialLocalizations.firstDayOfWeekIndex], Sunday without one.
+  final int? firstDayOfWeek;
 
   /// Month to open on. Defaults to [selectedDate], else today.
   final DateTime? initialDate;
@@ -447,15 +461,30 @@ class _BCCalendarState extends State<BCCalendar> {
     );
   }
 
+  /// [BCCalendar.firstDayOfWeek] as an index into [_weekdayLabels]:
+  /// 0 for Sunday, 1 for Monday.
+  int _firstDayIndex(BuildContext context) {
+    if (widget.firstDayOfWeek case final day?) {
+      assert(day >= DateTime.monday && day <= DateTime.sunday);
+      return day % 7;
+    }
+    return Localizations.of<MaterialLocalizations>(
+          context,
+          MaterialLocalizations,
+        )?.firstDayOfWeekIndex ??
+        0;
+  }
+
   Widget _weekdayRow(BuildContext context) {
     final bc = context.bcTheme;
+    final first = _firstDayIndex(context);
     return Row(
       children: [
-        for (final label in _weekdayLabels)
+        for (var i = 0; i < 7; i++)
           Expanded(
             child: Center(
               child: Text(
-                label,
+                _weekdayLabels[(first + i) % 7],
                 style: BCTypography.textXs.copyWith(
                   color: bc.muted,
                   fontWeight: BCTypography.medium,
@@ -487,8 +516,8 @@ class _BCCalendarState extends State<BCCalendar> {
 
   Widget _monthPageView(BuildContext context, DateTime month) {
     final firstOfMonth = DateTime(month.year, month.month, 1);
-    // Leading blanks so the 1st lands under its weekday (Sunday start).
-    final leading = firstOfMonth.weekday % 7;
+    // Leading blanks so the 1st lands under its weekday.
+    final leading = (firstOfMonth.weekday % 7 - _firstDayIndex(context)) % 7;
     final daysInMonth = DateTime(month.year, month.month + 1, 0).day;
 
     final cells = <Widget>[];
@@ -643,17 +672,22 @@ class BCDatePickerDialog extends StatelessWidget {
     this.initialDate,
     required this.firstDate,
     required this.lastDate,
+    this.firstDayOfWeek,
   });
 
   final DateTime? initialDate;
   final DateTime firstDate;
   final DateTime lastDate;
 
+  /// See [BCCalendar.firstDayOfWeek].
+  final int? firstDayOfWeek;
+
   static Future<DateTime?> show(
     BuildContext context, {
     DateTime? initialDate,
     required DateTime firstDate,
     required DateTime lastDate,
+    int? firstDayOfWeek,
   }) {
     return BCDialog.show<DateTime>(
       context,
@@ -661,6 +695,7 @@ class BCDatePickerDialog extends StatelessWidget {
         initialDate: initialDate,
         firstDate: firstDate,
         lastDate: lastDate,
+        firstDayOfWeek: firstDayOfWeek,
       ),
     );
   }
@@ -679,6 +714,7 @@ class BCDatePickerDialog extends StatelessWidget {
         selectedDate: initialDate,
         firstDate: firstDate,
         lastDate: lastDate,
+        firstDayOfWeek: firstDayOfWeek,
         onDateSelected: (date) => Navigator.of(context).pop(date),
       ),
     );

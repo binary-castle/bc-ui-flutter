@@ -495,6 +495,39 @@ void main() {
       expect(picked, DateTime(2026, 7, 15));
     });
 
+    testWidgets('weeks start on the day asked for, Sunday by default',
+        (tester) async {
+      Future<void> open(int? firstDayOfWeek) async {
+        await tester.pumpWidget(
+          _app(
+            BCDateField(
+              key: ValueKey(firstDayOfWeek),
+              firstDate: DateTime(2026, 1, 1),
+              lastDate: DateTime(2026, 12, 31),
+              value: DateTime(2026, 7, 10),
+              firstDayOfWeek: firstDayOfWeek,
+            ),
+          ),
+        );
+        await tester.tap(find.byType(BCDateField));
+        await tester.pumpAndSettle();
+      }
+
+      double x(Finder f) => tester.getCenter(f).dx;
+
+      await open(DateTime.monday);
+      final sundays = find.text('S');
+      expect(x(find.text('M')), lessThan(x(sundays.first)));
+      expect(x(find.text('M')), lessThan(x(sundays.last)));
+      // 1 July 2026 is a Wednesday: it sits under W.
+      expect(x(find.text('1').first), moreOrLessEquals(x(find.text('W'))));
+
+      await tester.pumpWidget(const SizedBox());
+      await open(null);
+      expect(x(find.text('S').first), lessThan(x(find.text('M'))));
+      expect(x(find.text('1').first), moreOrLessEquals(x(find.text('W'))));
+    });
+
     testWidgets('disabled field does not open the picker', (tester) async {
       await tester.pumpWidget(
         _app(const BCDateField(isDisabled: true, placeholder: 'Date')),
